@@ -1,104 +1,135 @@
-<!DOCTYPE html>
-<html lang="vi" data-theme="light">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>English Flashcards Pro</title>
+/* =========================================
+   GIAO DIỆN TỐI GIẢN (CHUẨN QUIZLET)
+========================================= */
+
+:root {
+    /* Tông màu cực kỳ sạch và chuyên nghiệp */
+    --bg-main: #f6f7fb;     /* Nền xám nhạt */
+    --bg-card: #ffffff;     /* Nền trắng tinh */
+    --bg-sidebar: #ffffff;
     
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+    --text-main: #1a1d28;   /* Chữ đen đậm */
+    --text-muted: #586380;  /* Chữ xám */
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div id="app">
-        <aside class="sidebar" id="sidebar">
-            <div class="logo"><i class="fa-solid fa-layer-group"></i><h2>Flashcards Pro</h2></div>
-            <nav class="sidebar-nav">
-                <button class="nav-item active" data-view="dashboard"><i class="fa-solid fa-home"></i><span>Trang chủ</span></button>
-                <button class="nav-item" data-view="study"><i class="fa-solid fa-book-open"></i><span>Học tập</span></button>
-                <button class="nav-item" data-view="review"><i class="fa-solid fa-check-double"></i><span>Ôn tập</span></button>
-                <button class="nav-item" data-view="library"><i class="fa-solid fa-book"></i><span>Thư viện</span></button>
-                <button class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i><span>Cài đặt</span></button>
-            </nav>
-            <div class="search-box"><i class="fa-solid fa-search"></i><input type="text" id="searchInput" placeholder="Tìm chủ đề..."></div>
-            <ul class="deck-list" id="deckList"></ul>
-        </aside>
-
-        <main class="main-content">
-            <header class="top-header">
-                <h1 id="viewTitle">Trang chủ</h1>
-                <button id="themeToggle" class="icon-btn"><i class="fa-solid fa-moon"></i></button>
-            </header>
-
-            <section id="dashboardView" class="view-section active">
-                <div class="stats-grid">
-                    <div class="stat-card squircle"><i class="fa-solid fa-check-circle stat-icon master-color"></i><div class="stat-info"><h3>Đã thuộc</h3><p id="statMastered">0 Từ</p></div></div>
-                    <div class="stat-card squircle"><i class="fa-solid fa-chart-pie stat-icon progress-color"></i><div class="stat-info"><h3>Tiến độ</h3><p id="statProgress">0%</p></div></div>
-                    <div class="stat-card squircle"><i class="fa-solid fa-fire stat-icon streak-color"></i><div class="stat-info"><h3>Chuỗi ngày</h3><p id="statStreak">0 Ngày</p></div></div>
-                </div>
-                <div class="welcome-banner squircle"><h2>Chào mừng trở lại!</h2><p>Vào Thư viện chọn bài học và vuốt thẻ để học nhé.</p></div>
-            </section>
-
-            <section id="studyView" class="view-section">
-                <div class="flashcard-container" id="swipeZone">
-                    <div class="flashcard" id="flashcard">
-                        <div class="card-face card-front squircle">
-                            <span class="pos-badge" id="cardPos"></span>
-                            <h2 id="cardWord">Chưa có dữ liệu</h2>
-                            <p class="ipa" id="cardIpa"></p>
-                        </div>
-                        <div class="card-face card-back squircle">
-                            <h2 id="cardMeaning"></h2>
-                            <p class="example" id="cardExample"></p>
-                            <p class="example" id="cardExampleVi" style="opacity:0.8; margin-top:5px;"></p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="controls squircle">
-                    <button class="btn-squircle icon-btn" id="prevBtn"><i class="fa-solid fa-backward"></i></button>
-                    <button class="btn-squircle icon-btn speak-btn" id="speakBtn"><i class="fa-solid fa-volume-high"></i></button>
-                    <button class="btn-squircle btn-danger" id="notMasteredBtn"><i class="fa-solid fa-xmark"></i> Chưa</button>
-                    <button class="btn-squircle btn-outline" id="masterBtn"><i class="fa-solid fa-check"></i> Thuộc</button>
-                    <button class="btn-squircle icon-btn" id="nextBtn"><i class="fa-solid fa-forward"></i></button>
-                </div>
-
-                <div class="listen-mode-wrapper"><button id="listenModeBtn" class="btn-squircle btn-listen"><i class="fa-solid fa-headphones"></i> <span id="listenText">Luyện nghe</span></button></div>
-            </section>
-
-            <section id="reviewView" class="view-section"></section>
-
-            <section id="libraryView" class="view-section">
-                <div class="mobile-search-box search-box squircle"><i class="fa-solid fa-search"></i><input type="text" id="mobileSearchInput" placeholder="Tìm chủ đề..."></div>
-                <ul class="mobile-deck-list deck-list" id="mobileDeckList"></ul>
-            </section>
-
-            <section id="settingsView" class="view-section">
-                <div class="settings-card squircle">
-                    <h3>Cài đặt & Dữ liệu</h3>
-                    <button id="importBtn" class="btn-squircle btn-outline"><i class="fa-solid fa-upload"></i> Nhập dữ liệu (.json)</button>
-                    <input type="file" id="importFile" accept=".json" style="display: none;">
-                    <button id="resetStatsBtn" class="btn-squircle btn-outline btn-danger-outline" style="margin-top:10px;"><i class="fa-solid fa-trash-can"></i> Xóa tiến độ học</button>
-                </div>
-            </section>
-        </main>
-
-        <nav class="bottom-nav" id="bottomNav">
-            <button class="nav-item active" data-view="dashboard"><i class="fa-solid fa-home"></i><span>Trang chủ</span></button>
-            <button class="nav-item" data-view="study"><i class="fa-solid fa-book-open"></i><span>Học</span></button>
-            <button class="nav-item" data-view="review"><i class="fa-solid fa-check-double"></i><span>Ôn tập</span></button>
-            <button class="nav-item" data-view="library"><i class="fa-solid fa-book"></i><span>Thư viện</span></button>
-            <button class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i><span>Cài đặt</span></button>
-        </nav>
-    </div>
+    --primary: #4255ff;     /* Xanh dương Quizlet */
+    --success: #23b26d;     /* Xanh lá chuẩn */
+    --danger: #ff725b;      /* Đỏ cam */
     
-    <script src="group_1.js"></script>
-    <script src="group_2.js"></script>
-    <script src="group_3.js"></script>
-    <script src="group_4.js"></script>
+    --border: #edeff4;      /* Viền nhạt */
     
-    <script src="app.js"></script>
-</body>
-</html>
+    --shadow: 0 4px 16px rgba(0,0,0,0.06);
+    --radius-sm: 8px;       /* Bo góc vuông vức hơn */
+    --radius-md: 16px;
+}
+
+[data-theme="dark"] {
+    --bg-main: #0a092d;
+    --bg-card: #2e3856;
+    --bg-sidebar: #2e3856;
+    --text-main: #f6f7fb;
+    --text-muted: #b6c0d6;
+    --border: #2e3856;
+    --shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+/* Reset & Base */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background: var(--bg-main); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+/* Khối chung */
+.squircle { background: var(--bg-card); border-radius: var(--radius-md); box-shadow: var(--shadow); border: 2px solid transparent; }
+
+/* Buttons */
+.btn-squircle { border-radius: var(--radius-sm); font-weight: 600; padding: 14px 20px; border: none; cursor: pointer; transition: 0.1s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; }
+.btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text-main); }
+.btn-outline:active { background: var(--border); }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger-outline { border: 2px solid var(--danger); color: var(--danger); background: transparent; }
+
+.icon-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--bg-card); border: 2px solid var(--border); color: var(--text-muted); font-size: 1.1rem; display: grid; place-items: center; cursor: pointer; transition: 0.1s; flex-shrink: 0; }
+.icon-btn:active { background: var(--border); transform: scale(0.95); }
+
+/* Layout */
+#app { display: flex; width: 100%; height: 100%; }
+.sidebar { width: 300px; background: var(--bg-sidebar); border-right: 2px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 20px; z-index: 10; }
+.main-content { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; }
+.top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.view-section { display: none; flex-direction: column; height: 100%; animation: fadeIn 0.2s ease; gap: 20px; }
+.view-section.active { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Sidebar Nav */
+.logo { color: var(--primary); font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+.sidebar-nav { display: flex; flex-direction: column; gap: 5px; }
+.nav-item { padding: 12px 15px; border-radius: var(--radius-sm); border: none; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.1s; }
+.nav-item:hover { background: var(--border); color: var(--text-main); }
+.nav-item.active { background: rgba(66, 85, 255, 0.1); color: var(--primary); }
+
+.search-box { display: flex; background: transparent; border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 10px 15px; align-items: center; gap: 10px; }
+.search-box input { border: none; outline: none; background: transparent; color: var(--text-main); width: 100%; font-size: 1rem; }
+.deck-list { overflow-y: auto; flex: 1; list-style: none; }
+.deck-item { padding: 12px 15px; border-radius: var(--radius-sm); border: 2px solid transparent; background: transparent; color: var(--text-main); text-align: left; font-weight: 600; cursor: pointer; margin-bottom: 5px; display: block; width: 100%; }
+.deck-item:hover { background: var(--bg-main); border-color: var(--border); }
+.deck-item.active { border-color: var(--primary); background: transparent; color: var(--primary); }
+
+/* Dashboard */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
+.stat-card { padding: 20px; display: flex; align-items: center; gap: 15px; border: 2px solid var(--border); box-shadow: none; }
+.stat-icon { font-size: 2rem; }
+.master-color { color: var(--success); } 
+.progress-color { color: var(--primary); } 
+.streak-color { color: #f5a623; }
+.welcome-banner { padding: 30px; margin-top: 20px; background: var(--primary); color: white; border-radius: var(--radius-md); border: none; }
+
+/* Flashcard Xịn - Trắng tinh, viền rõ ràng */
+.flashcard-container { perspective: 1000px; flex: 1; display: flex; align-items: center; justify-content: center; min-height: 380px; width: 100%; touch-action: pan-y; margin-bottom: 10px; }
+.flashcard { width: 100%; max-width: 600px; height: 100%; min-height: 350px; max-height: 55vh; position: relative; transform-style: preserve-3d; transition: transform 0.4s ease-in-out; cursor: pointer; border-radius: var(--radius-md); box-shadow: var(--shadow); }
+.flashcard.is-flipped { transform: rotateY(180deg); }
+.card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; text-align: center; border-radius: var(--radius-md); background: var(--bg-card); border: 2px solid var(--border); }
+.card-front { z-index: 2; }
+.card-back { transform: rotateY(180deg); border-color: var(--primary); }
+
+.card-front h2, .card-back h2 { font-size: clamp(2rem, 6vw, 3rem); font-weight: 700; margin-bottom: 15px; }
+.card-back h2 { color: var(--primary); }
+
+.pos-badge { position: absolute; top: 20px; right: 20px; padding: 5px 12px; border-radius: 6px; background: var(--bg-main); font-size: 0.85rem; font-weight: bold; color: var(--text-muted); text-transform: uppercase; display: none; }
+.pos-badge.show { display: block; }
+.ipa { font-size: 1.2rem; color: var(--text-muted); display: none; margin-bottom: 15px; }
+.ipa.show { display: block; }
+.example { font-size: 1.15rem; color: var(--text-muted); font-style: italic; display: none; }
+.example.show { display: block; }
+
+/* Control Buttons */
+.controls { display: flex; justify-content: center; gap: 10px; margin: 0 auto; width: 100%; max-width: 600px; padding: 10px; background: transparent; box-shadow: none; border: none; }
+.controls #masterBtn, .controls #notMasteredBtn { flex: 1; font-size: 1.05rem; }
+.listen-mode-wrapper { display: flex; justify-content: center; margin-top: 5px; }
+.btn-listen { max-width: 600px; width: 100%; border-radius: var(--radius-md); padding: 18px; font-size: 1.1rem; }
+.btn-listen.active { background: var(--danger); border-color: var(--danger); color: white; }
+
+/* Settings */
+.settings-card { padding: 30px; border: 2px solid var(--border); box-shadow: none; }
+
+/* Bottom Nav Mobile */
+.bottom-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg-card); border-top: 2px solid var(--border); padding: 10px 5px calc(10px + env(safe-area-inset-bottom)); z-index: 100; justify-content: space-around; }
+.bottom-nav .nav-item { flex-direction: column; gap: 5px; font-size: 0.75rem; padding: 8px 0; border-radius: 8px; flex: 1; }
+.bottom-nav .nav-item i { font-size: 1.4rem; }
+
+#libraryView { display: none; flex-direction: column; gap: 15px; height: 100%; }
+#libraryView.active { display: flex; }
+
+/* Mobile Reponsive */
+@media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main-content { padding: 15px 15px calc(85px + env(safe-area-inset-bottom)) 15px; }
+    .bottom-nav { display: flex; }
+    #libraryView { display: flex; }
+    
+    .controls { gap: 8px; }
+    .icon-btn { width: 46px; height: 46px; font-size: 1rem; border-radius: 12px; }
+    .controls #masterBtn, .controls #notMasteredBtn { padding: 14px 5px; font-size: 0.95rem; border-radius: 12px; }
+    
+    .flashcard-container { min-height: 360px; }
+    .flashcard { min-height: 360px; }
+}
