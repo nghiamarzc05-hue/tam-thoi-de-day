@@ -1,145 +1,134 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="light">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Flashcards UI</title>
-
-<style>
-body{margin:0;font-family:system-ui;background:#f4f7fb}
-.container{max-width:420px;margin:auto;padding:18px;padding-bottom:90px}
-
-/* HEADER */
-.top{display:flex;align-items:center;gap:10px}
-.logo{width:46px;height:46px;border-radius:12px;background:linear-gradient(#2b8ff6,#36a8ff);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
-.search{flex:1;background:#fff;border-radius:999px;padding:8px 12px}
-.search input{border:0;outline:none;width:100%}
-
-/* HERO */
-h1{margin:14px 0 0;font-size:28px}
-.sub{color:#777;margin-bottom:14px}
-
-/* CARD */
-.card{background:#fff;border-radius:18px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
-.deck{background:linear-gradient(90deg,#2b8ff6,#4fc3f7);color:#fff;padding:12px;border-radius:14px;font-weight:700}
-.btn{padding:12px;border-radius:14px;border:0;font-weight:700;cursor:pointer}
-.primary{background:#2b9df4;color:white}
-.ghost{background:#eee}
-
-/* QUICK */
-.quick{display:flex;gap:12px;margin-top:16px}
-.quick div{flex:1;padding:18px;border-radius:16px;color:white;font-weight:700}
-.manual{background:linear-gradient(90deg,#2b8ff6,#2b9df4)}
-.auto{background:linear-gradient(90deg,#2bd1b0,#41d3b7)}
-
-/* LIBRARY */
-.lib{display:flex;gap:10px;overflow:auto;margin-top:10px}
-.lib div{min-width:120px;background:#fff;padding:10px;border-radius:12px;box-shadow:0 10px 20px rgba(0,0,0,.06);cursor:pointer}
-
-/* BOTTOM NAV */
-.bottom{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:420px;max-width:100%;padding:8px}
-.nav{background:#fff;border-radius:28px;padding:10px;display:flex;justify-content:space-between;box-shadow:0 15px 40px rgba(0,0,0,.15)}
-.nav div{font-size:12px;color:#777;text-align:center}
-.active{color:#2b9df4;font-weight:700}
-
-/* MODAL QUIZ */
-#quiz{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center}
-.quizbox{background:white;padding:20px;border-radius:16px;width:90%;max-width:380px;text-align:center}
-.front{font-size:22px;font-weight:700}
-.back{margin-top:10px;color:#444;display:none}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>English Flashcards Pro</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,500;0,600;0,700;0,800;1,500;1,700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
+    <div id="app">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-layer-group"></i>
+                <h2>Flashcards Pro</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-view="dashboard"><i class="fa-solid fa-house"></i><span>Trang chủ</span></button>
+                <button class="nav-item" data-view="study"><i class="fa-solid fa-book-open"></i><span>Học tập</span></button>
+                <button class="nav-item" data-view="review"><i class="fa-solid fa-check-double"></i><span>Ôn tập</span></button>
+                <button class="nav-item" data-view="library"><i class="fa-solid fa-book"></i><span>Thư viện</span></button>
+                <button class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i><span>Cài đặt</span></button>
+            </nav>
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchInput" placeholder="Tìm chủ đề...">
+            </div>
+            <ul class="deck-list" id="deckList"></ul>
+        </aside>
 
-<div class="container">
+        <main class="main-content">
+            <header class="top-header">
+                <h1 id="viewTitle">Trang chủ</h1>
+                <button id="themeToggle" class="icon-btn"><i class="fa-solid fa-moon"></i></button>
+            </header>
 
-<div class="top">
-<div class="logo">EN</div>
-<div class="search"><input placeholder="Tìm từ / deck..."></div>
-</div>
+            <section id="dashboardView" class="view-section active">
+                <div class="stats-grid">
+                    <div class="stat-card squircle">
+                        <i class="fa-solid fa-circle-check stat-icon master-color"></i>
+                        <div class="stat-info">
+                            <h3>Đã thuộc</h3>
+                            <p id="statMastered">0 Từ</p>
+                        </div>
+                    </div>
+                    <div class="stat-card squircle">
+                        <i class="fa-solid fa-chart-pie stat-icon progress-color"></i>
+                        <div class="stat-info">
+                            <h3>Tiến độ</h3>
+                            <p id="statProgress">0%</p>
+                        </div>
+                    </div>
+                    <div class="stat-card squircle">
+                        <i class="fa-solid fa-fire stat-icon streak-color"></i>
+                        <div class="stat-info">
+                            <h3>Chuỗi ngày</h3>
+                            <p id="statStreak">0 Ngày</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="welcome-banner squircle">
+                    <h2>Sẵn sàng học chưa?</h2>
+                    <p>Hàng ngàn từ vựng đang chờ bạn chinh phục. Vào Thư viện và bắt đầu ngay nhé!</p>
+                </div>
+            </section>
 
-<h1>Welcome Back!</h1>
-<div class="sub">Ready to continue learning?</div>
+            <section id="studyView" class="view-section">
+                <div class="flashcard-container" id="swipeZone">
+                    <div class="flashcard" id="flashcard">
+                        <div class="card-face card-front squircle">
+                            <span class="pos-badge" id="cardPos"></span>
+                            <h2 id="cardWord">Chưa có dữ liệu</h2>
+                            <p class="ipa" id="cardIpa"></p>
+                        </div>
+                        <div class="card-face card-back squircle">
+                            <h2 id="cardMeaning"></h2>
+                            <p class="example" id="cardExample"></p>
+                            <p class="example" id="cardExampleVi" style="opacity:0.8; font-style: normal;"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn-squircle icon-btn" id="prevBtn" title="Quay lại"><i class="fa-solid fa-backward-step"></i></button>
+                    <button class="btn-squircle icon-btn speak-btn" id="speakBtn" title="Phát âm"><i class="fa-solid fa-volume-high"></i></button>
+                    <button class="btn-squircle btn-outline" id="notMasteredBtn"><i class="fa-solid fa-xmark"></i> Chưa thuộc</button>
+                    <button class="btn-squircle btn-outline" id="masterBtn"><i class="fa-solid fa-check"></i> Đã thuộc</button>
+                    <button class="btn-squircle icon-btn" id="nextBtn" title="Tiếp theo"><i class="fa-solid fa-forward-step"></i></button>
+                </div>
 
-<div class="card">
-<div class="deck" id="deckName">Tất cả thẻ</div>
-<div id="count">0 cards left</div>
-<br>
-<button class="btn primary" onclick="startQuiz()">Continue</button>
-<button class="btn ghost" onclick="manage()">Manage</button>
-</div>
+                <div class="listen-mode-wrapper">
+                    <button id="listenModeBtn" class="btn-squircle btn-listen">
+                        <i class="fa-solid fa-headphones"></i> <span id="listenText">Bật chế độ Luyện nghe</span>
+                    </button>
+                </div>
+            </section>
 
-<div class="quick">
-<div class="manual" onclick="startQuiz()">Học thủ công</div>
-<div class="auto" onclick="startQuiz()">Học tự động</div>
-</div>
+            <section id="reviewView" class="view-section">
+                <div class="welcome-banner squircle" style="background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
+                    <i class="fa-solid fa-brain" style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;"></i>
+                    <h2>Khu vực Ôn tập</h2>
+                    <p style="color: var(--text-muted);">Những từ bạn chưa thuộc sẽ xuất hiện ở đây để học lại.</p>
+                </div>
+            </section>
 
-<h3>Library</h3>
-<div class="lib" id="lib"></div>
+            <section id="libraryView" class="view-section">
+                <div class="search-box squircle">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="mobileSearchInput" placeholder="Tìm chủ đề bài học...">
+                </div>
+                <ul class="deck-list" id="mobileDeckList"></ul>
+            </section>
 
-</div>
+            <section id="settingsView" class="view-section">
+                <div class="settings-card squircle">
+                    <h3>Quản lý dữ liệu</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 20px;">Sao lưu hoặc khôi phục tiến độ học tập của bạn.</p>
+                    
+                    <button id="importBtn" class="btn-squircle btn-outline"><i class="fa-solid fa-file-import"></i> Nhập dữ liệu (.json)</button>
+                    <input type="file" id="importFile" accept=".json" style="display: none;">
+                    
+                    <button id="resetStatsBtn" class="btn-squircle btn-danger-outline" style="margin-top: 15px;"><i class="fa-solid fa-trash-can"></i> Xóa toàn bộ tiến độ</button>
+                </div>
+            </section>
+        </main>
 
-<div class="bottom">
-<div class="nav">
-<div class="active">Trang chủ</div>
-<div>Học</div>
-<div>Ôn tập</div>
-<div>Thư viện</div>
-<div>Cài đặt</div>
-</div>
-</div>
-
-<!-- QUIZ -->
-<div id="quiz">
-<div class="quizbox">
-<div class="front" id="front"></div>
-<div class="back" id="back"></div>
-<br>
-<button class="btn ghost" onclick="reveal()">Reveal</button>
-<button class="btn primary" onclick="next()">Next</button>
-<button class="btn" onclick="closeQuiz()">Quit</button>
-</div>
-</div>
-
-<script>
-const DATA=[
-{en:"apple",vi:"quả táo"},
-{en:"dog",vi:"con chó"},
-{en:"cat",vi:"con mèo"},
-{en:"car",vi:"xe hơi"},
-{en:"book",vi:"quyển sách"}
-]
-
-let i=0
-
-function renderLib(){
-const lib=document.getElementById("lib")
-DATA.forEach(w=>{
-let d=document.createElement("div")
-d.innerHTML=w.en
-d.onclick=()=>alert(w.vi)
-lib.appendChild(d)
-})
-document.getElementById("count").innerText=DATA.length+" cards left"
-}
-renderLib()
-
-function startQuiz(){
-i=0
-document.getElementById("quiz").style.display="flex"
-show()
-}
-function show(){
-document.getElementById("front").innerText=DATA[i].en
-document.getElementById("back").innerText=DATA[i].vi
-document.getElementById("back").style.display="none"
-}
-function reveal(){document.getElementById("back").style.display="block"}
-function next(){i++;if(i>=DATA.length){alert("Xong!");closeQuiz()}else show()}
-function closeQuiz(){document.getElementById("quiz").style.display="none"}
-function manage(){alert("Manage decks (demo)")}
-</script>
-
-</body>
-</html>
+        <nav class="bottom-nav" id="bottomNav">
+            <button class="nav-item active" data-view="dashboard"><i class="fa-solid fa-house
