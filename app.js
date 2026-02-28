@@ -1,178 +1,195 @@
 // =========================================
-// FILE: app.js - BẢN FIX CUỐI CÙNG (CÓ CỨU HỘ DATA)
+// FILE: app.js - XỬ LÝ LOGIC CHÍNH
 // =========================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 Bắt đầu khởi chạy ứng dụng...");
+// 1. GỘP DỮ LIỆU TỪ CÁC FILE GROUP (Kiểm tra an toàn)
+let allDecks = [];
 
-    // 1. TÌM VÀ GỘP DỮ LIỆU TỪ CÁC FILE GROUP
-    let allDecks = [];
-    if (typeof group_1_decks !== 'undefined') allDecks = allDecks.concat(group_1_decks);
-    if (typeof group_2_decks !== 'undefined') allDecks = allDecks.concat(group_2_decks);
-    if (typeof group_3_decks !== 'undefined') allDecks = allDecks.concat(group_3_decks);
-    if (typeof group_4_decks !== 'undefined') allDecks = allDecks.concat(group_4_decks);
+// Hàm hỗ trợ gộp dữ liệu từ các biến global được định nghĩa trong các file group_x.js
+function mergeData() {
+    const dataSources = [
+        { name: 'group_1_decks', data: typeof group_1_decks !== 'undefined' ? group_1_decks : [] },
+        { name: 'group_2_decks', data: typeof group_2_decks !== 'undefined' ? group_2_decks : [] },
+        { name: 'group_3_decks', data: typeof group_3_decks !== 'undefined' ? group_3_decks : [] },
+        { name: 'group_4_decks', data: typeof group_4_decks !== 'undefined' ? group_4_decks : [] }
+    ];
 
-    // 🔴 PHAO CỨU SINH: Nếu dữ liệu vẫn bằng 0 (Lỗi file group)
-    if (allDecks.length === 0) {
-        console.warn("⚠️ Không load được data từ file group! Chạy data mẫu.");
-        allDecks = [{
-            id: "test_deck",
-            ten: "BÀI TEST SỬA LỖI NÚT BẤM",
-            items: [
-                { id: "t1", term: "Success", pos: "n.", ipa: "/səkˈses/", meaning_vi: "Sự thành công", example: "The buttons are working now!" },
-                { id: "t2", term: "Perfect", pos: "adj.", ipa: "/ˈpɜːrfɪkt/", meaning_vi: "Hoàn hảo", example: "Your website is 10/10." },
-                { id: "t3", term: "Awesome", pos: "adj.", ipa: "/ˈɔːsəm/", meaning_vi: "Tuyệt vời", example: "You did a great job." }
-            ]
-        }];
-        alert("⚠️ Web không đọc được các file group_1,2,3,4.js của bạn.\n\nMình đã tải 'Bài Test' để bạn thử các nút bấm. Nếu nút bấm lật/chuyển bài bình thường, hãy kiểm tra lại các file group nhé!");
-    }
-
-    let currentDeck = allDecks[0]; // Mặc định chọn bài đầu tiên
-    let currentCardIndex = 0;
-    let isFlipped = false;
-    let masteredCards = JSON.parse(localStorage.getItem('masteredCards')) || [];
-
-    // 2. KẾT NỐI DOM ELEMENTS
-    const DOM = {
-        views: document.querySelectorAll('.view-section'),
-        navItems: document.querySelectorAll('.nav-item'),
-        viewTitle: document.getElementById('viewTitle'),
-        deckList: document.getElementById('deckList'),
-        mobileDeckList: document.getElementById('mobileDeckList'),
-        flashcard: document.getElementById('flashcard'),
-        cardWord: document.getElementById('cardWord'),
-        cardPos: document.getElementById('cardPos'),
-        cardIpa: document.getElementById('cardIpa'),
-        cardMeaning: document.getElementById('cardMeaning'),
-        cardExample: document.getElementById('cardExample'),
-        prevBtn: document.getElementById('prevBtn'),
-        nextBtn: document.getElementById('nextBtn'),
-        masterBtn: document.getElementById('masterBtn'),
-        notMasteredBtn: document.getElementById('notMasteredBtn'),
-        speakBtn: document.getElementById('speakBtn'),
-        statMastered: document.getElementById('statMastered'),
-        statProgress: document.getElementById('statProgress')
-    };
-
-    // 3. HIỂN THỊ DANH SÁCH BÀI HỌC VÀO MENU
-    function renderDeckList() {
-        DOM.deckList.innerHTML = '';
-        DOM.mobileDeckList.innerHTML = '';
-        allDecks.forEach((deck, index) => {
-            const li = document.createElement('li');
-            li.className = 'deck-item';
-            li.innerHTML = `<i class="fa-solid fa-folder-open" style="margin-right: 8px;"></i> ${deck.ten} <span style="float:right; opacity:0.6; font-size: 0.85em">${deck.items.length} từ</span>`;
-            
-            // Nếu là bài đầu tiên, cho nó sáng lên luôn
-            if(index === 0) li.classList.add('active');
-
-            const liMobile = li.cloneNode(true);
-
-            const loadDeck = () => {
-                currentDeck = deck;
-                currentCardIndex = 0;
-                switchView('study');
-                DOM.viewTitle.innerText = deck.ten;
-                loadCard();
-                document.querySelectorAll('.deck-item').forEach(el => el.classList.remove('active'));
-                li.classList.add('active');
-                liMobile.classList.add('active');
-            };
-
-            li.addEventListener('click', loadDeck);
-            liMobile.addEventListener('click', loadDeck);
-            DOM.deckList.appendChild(li);
-            DOM.mobileDeckList.appendChild(liMobile);
-        });
-    }
-
-    // 4. LOAD TỪ VỰNG LÊN THẺ
-    function loadCard() {
-        if (!currentDeck || currentDeck.items.length === 0) return;
-        const card = currentDeck.items[currentCardIndex];
-
-        DOM.cardWord.innerText = card.term;
-        DOM.cardMeaning.innerText = card.meaning_vi;
-        
-        if (card.pos) { DOM.cardPos.innerText = card.pos; DOM.cardPos.classList.add('show'); } else { DOM.cardPos.classList.remove('show'); }
-        if (card.ipa) { DOM.cardIpa.innerText = card.ipa; DOM.cardIpa.classList.add('show'); } else { DOM.cardIpa.classList.remove('show'); }
-        if (card.example) { DOM.cardExample.innerText = card.example; DOM.cardExample.classList.add('show'); } else { DOM.cardExample.classList.remove('show'); }
-
-        isFlipped = false;
-        DOM.flashcard.classList.remove('is-flipped');
-    }
-
-    // 5. CHUYỂN TAB QUA LẠI
-    function switchView(viewId) {
-        DOM.views.forEach(view => view.classList.remove('active'));
-        document.getElementById(viewId + 'View').classList.add('active');
-        DOM.navItems.forEach(item => {
-            item.classList.remove('active');
-            if (item.getAttribute('data-view') === viewId) item.classList.add('active');
-        });
-    }
-
-    DOM.navItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-            const viewId = e.currentTarget.getAttribute('data-view');
-            switchView(viewId);
-            const titles = { 'dashboard': 'Trang chủ', 'study': currentDeck ? currentDeck.ten : 'Học tập', 'library': 'Thư viện', 'review': 'Ôn tập', 'settings': 'Cài đặt' };
-            DOM.viewTitle.innerText = titles[viewId] || 'Flashcards';
-        });
+    dataSources.forEach(source => {
+        if (source.data.length > 0) {
+            allDecks = allDecks.concat(source.data);
+        } else {
+            console.warn(`Cảnh báo: Nguồn dữ liệu ${source.name} trống hoặc chưa được nạp.`);
+        }
     });
 
-    // 6. SỰ KIỆN CÁC NÚT BẤM (CHẮC CHẮN CHẠY)
+    // Hỗ trợ cấu trúc dữ liệu kiểu mới (FLASHCARD_TOPIC_DATA) nếu có
+    if (typeof window.FLASHCARD_TOPIC_DATA !== 'undefined') {
+        Object.values(window.FLASHCARD_TOPIC_DATA).forEach(topic => {
+            allDecks.push(topic);
+        });
+    }
+}
+
+mergeData();
+
+// 2. BIẾN TRẠNG THÁI (STATE)
+let currentDeck = null;
+let currentCardIndex = 0;
+let isFlipped = false;
+let masteredCards = JSON.parse(localStorage.getItem('masteredCards')) || [];
+
+// 3. KẾT NỐI DOM ELEMENTS
+const DOM = {
+    views: document.querySelectorAll('.view-section'),
+    navItems: document.querySelectorAll('.nav-item'),
+    viewTitle: document.getElementById('viewTitle'),
+    deckList: document.getElementById('deckList'),
+    mobileDeckList: document.getElementById('mobileDeckList'),
+    flashcard: document.getElementById('flashcard'),
+    cardPos: document.getElementById('cardPos'),
+    cardWord: document.getElementById('cardWord'),
+    cardIpa: document.getElementById('cardIpa'),
+    cardMeaning: document.getElementById('cardMeaning'),
+    cardExample: document.getElementById('cardExample'),
+    prevBtn: document.getElementById('prevBtn'),
+    nextBtn: document.getElementById('nextBtn'),
+    speakBtn: document.getElementById('speakBtn'),
+    masterBtn: document.getElementById('masterBtn'),
+    themeToggle: document.getElementById('themeToggle'),
+    statMastered: document.getElementById('statMastered'),
+    statProgress: document.getElementById('statProgress')
+};
+
+// 4. KHỞI TẠO APP
+function init() {
+    renderDeckList();
+    setupEventListeners();
+    updateDashboardStats();
+    
+    // Mặc định hiển thị trang chủ
+    switchView('dashboard');
+}
+
+// 5. HIỂN THỊ DANH SÁCH BÀI HỌC (Render Decks)
+function renderDeckList() {
+    const html = allDecks.map((deck, index) => `
+        <li class="deck-item squircle" onclick="startStudy(${index})">
+            <div class="deck-info">
+                <h4>${deck.ten || deck.topicId}</h4>
+                <span>${deck.items.length} từ vựng</span>
+            </div>
+            <i class="fa-solid fa-chevron-right"></i>
+        </li>
+    `).join('');
+
+    if(DOM.deckList) DOM.deckList.innerHTML = html;
+    if(DOM.mobileDeckList) DOM.mobileDeckList.innerHTML = html;
+}
+
+// 6. LOGIC HỌC TẬP (Study Logic)
+function startStudy(deckIndex) {
+    currentDeck = allDecks[deckIndex];
+    currentCardIndex = 0;
+    isFlipped = false;
+    switchView('study');
+    updateCard();
+}
+
+function updateCard() {
+    if (!currentDeck) return;
+    const card = currentDeck.items[currentCardIndex];
+    
+    // Reset mặt thẻ
+    DOM.flashcard.classList.remove('flipped');
+    isFlipped = false;
+
+    // Cập nhật nội dung
+    DOM.cardPos.innerText = `${currentCardIndex + 1} / ${currentDeck.items.length}`;
+    DOM.cardWord.innerText = card.term;
+    DOM.cardIpa.innerText = card.ipa || '';
+    DOM.cardMeaning.innerText = card.meaning_vi;
+    DOM.cardExample.innerText = card.example || '';
+}
+
+// 7. ĐIỀU HƯỚNG GIAO DIỆN
+function switchView(viewId) {
+    DOM.views.forEach(view => {
+        view.classList.remove('active');
+        if (view.id === viewId + 'View') view.classList.add('active');
+    });
+    
+    DOM.navItems.forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.view === viewId) item.classList.add('active');
+    });
+
+    const titles = { 'dashboard': 'Trang chủ', 'study': 'Học tập', 'library': 'Thư viện', 'settings': 'Cài đặt' };
+    if(DOM.viewTitle) DOM.viewTitle.innerText = titles[viewId] || 'Flashcards';
+}
+
+// 8. SỰ KIỆN (Events)
+function setupEventListeners() {
+    // Lật thẻ
     DOM.flashcard.addEventListener('click', () => {
         isFlipped = !isFlipped;
-        DOM.flashcard.classList.toggle('is-flipped');
+        DOM.flashcard.classList.toggle('flipped', isFlipped);
     });
 
+    // Chuyển thẻ
     DOM.nextBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        currentCardIndex = (currentCardIndex < currentDeck.items.length - 1) ? currentCardIndex + 1 : 0;
-        loadCard();
+        if (currentCardIndex < currentDeck.items.length - 1) {
+            currentCardIndex++;
+            updateCard();
+        }
     });
 
     DOM.prevBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        currentCardIndex = (currentCardIndex > 0) ? currentCardIndex - 1 : currentDeck.items.length - 1;
-        loadCard();
-    });
-
-    DOM.speakBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(currentDeck.items[currentCardIndex].term);
-            utterance.lang = 'en-US';
-            speechSynthesis.speak(utterance);
+        if (currentCardIndex > 0) {
+            currentCardIndex--;
+            updateCard();
         }
     });
 
+    // Phát âm
+    DOM.speakBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const text = currentDeck.items[currentCardIndex].term;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+    });
+
+    // Đã thuộc
     DOM.masterBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         const wordId = currentDeck.items[currentCardIndex].id;
         if (!masteredCards.includes(wordId)) {
             masteredCards.push(wordId);
             localStorage.setItem('masteredCards', JSON.stringify(masteredCards));
-            DOM.statMastered.innerText = `${masteredCards.length} Từ`;
+            updateDashboardStats();
         }
         DOM.nextBtn.click();
     });
 
-    DOM.notMasteredBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        DOM.nextBtn.click();
+    // Chuyển View từ Nav
+    DOM.navItems.forEach(item => {
+        item.addEventListener('click', () => switchView(item.dataset.view));
     });
+}
 
-    // 7. CHẠY KHỞI TẠO
-    renderDeckList();
-    loadCard();
-    DOM.statMastered.innerText = `${masteredCards.length} Từ`;
+function updateDashboardStats() {
+    if(DOM.statMastered) DOM.statMastered.innerText = `${masteredCards.length} Từ`;
     
-    // Nút đổi màu nền
-    document.getElementById('themeToggle').addEventListener('click', () => {
-        const root = document.documentElement;
-        const newTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        root.setAttribute('data-theme', newTheme);
-    });
-});
+    let totalWords = 0;
+    allDecks.forEach(deck => totalWords += deck.items.length);
+    
+    if (totalWords > 0 && DOM.statProgress) {
+        const percent = Math.round((masteredCards.length / totalWords) * 100);
+        DOM.statProgress.innerText = `${percent}%`;
+    }
+}
+
+// Chạy ứng dụng
+document.addEventListener('DOMContentLoaded', init);
