@@ -1,244 +1,136 @@
-v<!doctype html>
-<html lang="vi">
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Flashcards — GitHub Pages Ready</title>
-<style>
-:root{--bg:#f4f7fb;--card:#fff;--muted:#6f7a86;--primary:#2b9df4;--radius-lg:14px}
-*{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;background:var(--bg)}
-.app{max-width:460px;margin:0 auto;padding:18px;padding-bottom:120px}
-.top{display:flex;gap:12px;align-items:center}
-.logo{width:48px;height:48px;border-radius:12px;background:linear-gradient(90deg,#2b8ff6,#4fc3f7);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
-.search{flex:1;margin-left:6px;background:rgba(255,255,255,0.95);border-radius:999px;padding:8px 12px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
-.search input{border:0;outline:0;background:transparent;width:100%}
-.settings{width:40px;height:40px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(2,6,23,0.06);cursor:pointer}
-.hero{margin-top:14px}.hero h1{margin:0;font-size:28px}.hero p{color:var(--muted);margin-top:6px}
-.card{background:var(--card);border-radius:var(--radius-lg);padding:14px;margin-top:12px;box-shadow:0 12px 36px rgba(2,6,23,0.06)}
-.deck-pill{display:inline-block;background:linear-gradient(90deg,#2b8ff6,#2b9df4);color:#fff;padding:10px 14px;border-radius:12px;font-weight:800}
-.meta{color:var(--muted);font-size:13px;margin-top:10px}
-.row{display:flex;gap:12px;margin-top:12px}
-.btn{padding:10px 12px;border-radius:12px;border:0;font-weight:800;cursor:pointer}
-.btn-primary{background:var(--primary);color:#fff}
-.btn-ghost{background:#fff;border:1px solid rgba(11,19,32,0.06)}
-.section-title{font-weight:800;margin-top:18px;margin-bottom:8px}
-.lib-row{display:flex;gap:10px;overflow:auto;padding-bottom:6px}
-.lib-card{min-width:140px;background:#fff;padding:12px;border-radius:12px;box-shadow:0 12px 36px rgba(2,6,23,0.06);cursor:pointer}
-.bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;width:100%;max-width:460px;padding:8px}
-.nav-inner{background:#fff;border-radius:28px;padding:10px 14px;display:flex;justify-content:space-between;box-shadow:0 16px 44px rgba(2,6,23,0.08)}
-.nav-item{display:flex;flex-direction:column;align-items:center;font-size:12px;color:var(--muted);cursor:pointer}.nav-item.active{color:var(--primary);font-weight:800}
-.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9999}.modal .backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.45)}.modal .panel{position:relative;background:#fff;border-radius:14px;padding:16px;max-width:480px;width:92%;box-shadow:0 20px 60px rgba(2,6,23,0.25)}.topic-list{max-height:320px;overflow:auto;margin-top:8px}.topic-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:#f6f8fb;margin-bottom:8px}
-.muted{color:var(--muted)}.small{font-size:13px;color:var(--muted)}kbd{background:#eef2f6;padding:4px 6px;border-radius:6px;font-weight:700}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>English Flashcards Pro</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,500;0,600;0,700;0,800;1,500;1,700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="app" role="application" aria-label="Flashcards upgraded">
+    <div id="app">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-layer-group"></i>
+                <h2>Flashcards Pro</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-view="dashboard"><i class="fa-solid fa-house"></i><span>Trang chủ</span></button>
+                <button class="nav-item" data-view="study"><i class="fa-solid fa-book-open"></i><span>Học tập</span></button>
+                <button class="nav-item" data-view="library"><i class="fa-solid fa-swatchbook"></i><span>Thư viện</span></button>
+                <button class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i><span>Cài đặt</span></button>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="themeToggle" class="btn-theme-toggle">
+                    <i class="fa-solid fa-moon"></i> <span>Đổi giao diện</span>
+                </button>
+            </div>
+        </aside>
 
-  <header class="top" role="banner">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div class="logo">EN</div>
-      <div>
-        <div style="font-weight:800">Đệ Nhị Web</div>
-        <div class="small muted">English Flashcards</div>
-      </div>
+        <main class="main-content">
+            <header class="top-bar">
+                <h1 id="viewTitle">Trang chủ</h1>
+            </header>
+
+            <section id="dashboardView" class="view-section active">
+                <div class="stats-grid">
+                    <div class="stat-card squircle">
+                        <i class="fa-solid fa-check-double color-success"></i>
+                        <div class="stat-info">
+                            <h3 id="statMastered">0 Từ</h3>
+                            <p>Đã thuộc</p>
+                        </div>
+                    </div>
+                    <div class="stat-card squircle">
+                        <i class="fa-solid fa-chart-line color-primary"></i>
+                        <div class="stat-info">
+                            <h3 id="statProgress">0%</h3>
+                            <p>Hoàn thành</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h2 class="section-subtitle">Danh sách bài học</h2>
+                <ul class="deck-list" id="deckList"></ul>
+            </section>
+
+            <section id="studyView" class="view-section">
+                <div class="study-container">
+                    <div class="card-status">
+                        <span id="cardPos">0 / 0</span>
+                    </div>
+
+                    <div class="flashcard-wrapper">
+                        <div class="flashcard" id="flashcard">
+                            <div class="card-face card-front squircle">
+                                <h2 id="cardWord">Word</h2>
+                                <p id="cardIpa" class="ipa-text">/ipa/</p>
+                                <span class="hint-text">Chạm để xem nghĩa</span>
+                            </div>
+                            
+                            <div class="card-face card-back squircle">
+                                <h3 id="cardMeaning">Nghĩa tiếng Việt</h3>
+                                <div class="example-box">
+                                    <p id="cardExample" class="example-en">Ví dụ tiếng Anh</p>
+                                    <p id="cardExampleVi" class="example-vi">Nghĩa của ví dụ</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="study-controls">
+                        <button id="prevBtn" class="control-btn" title="Từ trước"><i class="fa-solid fa-arrow-left"></i></button>
+                        
+                        <button id="speakBtn" class="control-btn primary" title="Phát âm"><i class="fa-solid fa-volume-high"></i></button>
+                        
+                        <button id="notMasteredBtn" class="control-btn danger" title="Chưa thuộc"><i class="fa-solid fa-xmark"></i></button>
+                        
+                        <button id="masterBtn" class="control-btn success" title="Đã thuộc"><i class="fa-solid fa-check"></i></button>
+                        
+                        <button id="nextBtn" class="control-btn" title="Từ tiếp theo"><i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="libraryView" class="view-section">
+                <div class="search-box squircle">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchInput" placeholder="Tìm chủ đề bài học...">
+                </div>
+                <ul class="deck-list" id="mobileDeckList"></ul>
+            </section>
+
+            <section id="settingsView" class="view-section">
+                <div class="settings-card squircle">
+                    <h3>Cài đặt ứng dụng</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 20px;">Tùy chỉnh trải nghiệm học tập của bạn.</p>
+                    <hr>
+                    <button id="resetStatsBtn" class="btn-danger-outline" style="margin-top: 20px;">
+                        <i class="fa-solid fa-trash-can"></i> Xóa toàn bộ tiến độ
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <nav class="bottom-nav" id="bottomNav">
+            <button class="nav-item active" data-view="dashboard"><i class="fa-solid fa-house"></i><span>Home</span></button>
+            <button class="nav-item" data-view="study"><i class="fa-solid fa-book-open"></i><span>Học</span></button>
+            <button class="nav-item" data-view="library"><i class="fa-solid fa-magnifying-glass"></i><span>Tìm</span></button>
+            <button class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i><span>Cài đặt</span></button>
+        </nav>
     </div>
 
-    <div class="search" role="search" aria-label="Tìm">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35" stroke="#97a4b3" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="11" r="5" stroke="#97a4b3" stroke-width="2"/></svg>
-      <input id="searchInput" placeholder="Tìm từ hoặc deck..." />
-    </div>
-
-    <button id="manageBtn" class="settings" title="Manage decks" aria-label="Manage decks">⚙️</button>
-  </header>
-
-  <main>
-    <section class="hero" aria-labelledby="welcome">
-      <h1 id="welcome">Welcome Back!</h1>
-      <p>Ready to continue learning?</p>
-
-      <div class="card" role="region" aria-label="Continue study">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <div class="small muted">Tiếp tục học</div>
-            <div class="deck-pill" id="deckTitle">Tất cả thẻ</div>
-            <div class="meta small" id="metaText">Mode • <span id="cardsLeft">0</span> cards</div>
-          </div>
-          <div style="text-align:right">
-            <div class="small muted">Streak</div>
-            <div style="font-weight:800;color:var(--primary)" id="streak">0 🔥</div>
-          </div>
-        </div>
-
-        <div class="row">
-          <button id="continueBtn" class="btn btn-primary">Continue</button>
-          <button id="exportBtn" class="btn btn-ghost">Export .json</button>
-        </div>
-      </div>
-    </section>
-
-    <section aria-labelledby="quick">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div class="section-title">Quick Start</div>
-        <div class="muted small">Shortcuts</div>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <div id="manualBtn" class="btn" style="flex:1;background:linear-gradient(90deg,#2b8ff6,#2b9df4);color:#fff">Học thủ công</div>
-        <div id="autoBtn" class="btn" style="flex:1;background:linear-gradient(90deg,#2bd1b0,#41d3b7);color:#fff">Học tự động</div>
-      </div>
-    </section>
-
-    <section aria-labelledby="focus">
-      <div class="section-title">Library</div>
-      <div class="lib-row" id="libRow" aria-live="polite"></div>
-    </section>
-
-    <div style="height:80px"></div>
-  </main>
-
-</div>
-
-<!-- MODALS: quiz + manage -->
-<div id="quizModal" class="modal" aria-hidden="true">
-  <div class="backdrop"></div>
-  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="quizTitle">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div id="quizTitle" style="font-weight:800">Quiz</div>
-      <div class="small muted"><span id="quizProgress">0/0</span></div>
-    </div>
-
-    <div style="margin-top:12px">
-      <div style="font-size:20px;font-weight:800" id="cardFront">Front</div>
-      <div class="small muted" id="cardBack" style="margin-top:10px;display:none">Back</div>
-      <div class="small muted" id="cardMeta" style="margin-top:8px">Deck: —</div>
-    </div>
-
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button id="revealBtn" class="btn btn-ghost">Reveal</button>
-      <button id="wrongBtn" class="btn" style="background:#ffdede;color:#600">I was wrong</button>
-      <button id="rightBtn" class="btn btn-primary">I was right</button>
-      <button id="quitBtn" class="btn">Quit</button>
-    </div>
-  </div>
-</div>
-
-<div id="manageModal" class="modal" aria-hidden="true" style="align-items:flex-start;padding-top:56px">
-  <div class="backdrop"></div>
-  <div class="panel" role="dialog" aria-modal="true">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div style="font-weight:800">Manage Decks</div>
-      <div>
-        <input id="fileInput" type="file" accept=".json" style="display:none"/>
-        <button id="importBtn" class="btn btn-ghost">Import JSON</button>
-        <button id="closeManage" class="btn">Close</button>
-      </div>
-    </div>
-
-    <div style="margin-top:10px">
-      <input id="newDeckInput" placeholder="New deck name" style="width:100%;padding:8px;border-radius:8px;border:1px solid #eee"/>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button id="addDeckBtn" class="btn btn-primary" style="flex:1">Add deck</button>
-        <button id="resetBtn" class="btn" style="flex:1;background:#ffdede;color:#600">Reset data</button>
-      </div>
-    </div>
-
-    <div class="topic-list" id="topicList" style="margin-top:12px"></div>
-    <div style="margin-top:10px" class="small muted">Tip: upload a <kbd>data.js</kbd> (defines <code>APP_DATA</code>) or <kbd>data/default_data.json</kbd> in the site root to auto-load on open.</div>
-  </div>
-</div>
-
-<script>
-/* Storage helpers: IDB + localStorage fallback */
-const STORAGE_KEY = 'vocab_app_state_v1';
-const IDB_DB = 'vocab_db', IDB_STORE = 'appdata';
-async function idbOpen(){ if(!window.indexedDB) throw new Error('no idb'); return new Promise((res,rej)=>{ const r=indexedDB.open(IDB_DB,1); r.onupgradeneeded=e=>{const db=e.target.result; if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);} ; r.onsuccess=e=>res(e.target.result); r.onerror=e=>rej(e.target.error); }); }
-async function idbGet(){ try{ const db=await idbOpen(); return new Promise((res,rej)=>{ const tx=db.transaction(IDB_STORE,'readonly'); const s=tx.objectStore(IDB_STORE); const r=s.get(STORAGE_KEY); r.onsuccess=e=>{ try{ res(JSON.parse(e.target.result)); }catch{ res(null);} }; r.onerror=e=>rej(e.target.error); }); }catch(e){return null;} }
-async function idbSet(obj){ try{ const db=await idbOpen(); return new Promise((res,rej)=>{ const tx=db.transaction(IDB_STORE,'readwrite'); const s=tx.objectStore(IDB_STORE); const r=s.put(JSON.stringify(obj),STORAGE_KEY); r.onsuccess=()=>res(true); r.onerror=e=>rej(e.target.error); }); }catch(e){return false;} }
-function lsGet(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)); }catch(e){return null;} }
-function lsSet(obj){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); return true;}catch(e){return false;} }
-
-/* App state */
-let APP_DATA = null;
-let UI_STATE = { currentDeckId: null };
-
-/* Utils */
-function uid(p='id'){ return p+'_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*9000); }
-function ensureDeckIds(data){ data.decks = data.decks||[]; data.decks.forEach(d=>{ if(!d.id) d.id=uid('deck'); d.cards=d.cards||[]; d.cards.forEach(c=>{ if(!c.id) c.id = uid('card'); }); }); return data; }
-
-/* Fallback */
-const FALLBACK_DATA = { decks:[ {id:'deck_demo',name:'Sample - Basic',description:'Demo deck',cards:[ {id:'c1',front:'apple',back:'quả táo'},{id:'c2',front:'book',back:'quyển sách'},{id:'c3',front:'cat',back:'con mèo'} ] } ] };
-
-/* Load initial: priority window.APP_DATA -> fetch data/default_data.json -> idb -> ls -> fallback */
-async function loadInitial(){
-  if(typeof window.APP_DATA !== 'undefined' && window.APP_DATA){ APP_DATA = ensureDeckIds(JSON.parse(JSON.stringify(window.APP_DATA))); await saveState(APP_DATA); return APP_DATA; }
-  try{ const r = await fetch('data/default_data.json'); if(r.ok){ const json = await r.json(); APP_DATA = ensureDeckIds(json); await saveState(APP_DATA); return APP_DATA; } }catch(e){}
-  const idb = await idbGet(); if(idb && idb.decks && idb.decks.length>0){ APP_DATA = idb; return APP_DATA; }
-  const ls = lsGet(); if(ls && ls.decks && ls.decks.length>0){ APP_DATA = ls; return APP_DATA; }
-  APP_DATA = ensureDeckIds(FALLBACK_DATA); await saveState(APP_DATA); return APP_DATA;
-}
-async function saveState(obj){ try{ await idbSet(obj); }catch(e){} try{ lsSet(obj);}catch(e){} }
-
-/* UI rendering */
-const libRow = document.getElementById('libRow');
-const deckTitleEl = document.getElementById('deckTitle');
-const cardsLeftEl = document.getElementById('cardsLeft');
-const streakEl = document.getElementById('streak');
-function renderLibrary(filter=''){ libRow.innerHTML=''; if(!APP_DATA || !APP_DATA.decks) return; APP_DATA.decks.forEach(deck=>{ if(filter && !deck.name.toLowerCase().includes(filter.toLowerCase())) return; const d=document.createElement('div'); d.className='lib-card'; d.dataset.deckId=deck.id; d.innerHTML = '<div style="font-weight:800">'+escapeHtml(deck.name)+'</div><div class="small muted" style="margin-top:8px">'+(deck.cards?deck.cards.length:0)+' words</div>'; d.addEventListener('click', ()=> openDeckQuiz(deck.id)); libRow.appendChild(d); }); const total = APP_DATA.decks.reduce((s,d)=>s+(d.cards?d.cards.length:0),0); cardsLeftEl.textContent = total; deckTitleEl.textContent = UI_STATE.currentDeckId ? (APP_DATA.decks.find(x=>x.id===UI_STATE.currentDeckId)||{name:'Tất cả thẻ'}).name : 'Tất cả thẻ'; }
-function escapeHtml(s){ if(typeof s!=='string') return s; return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-/* Quiz */
-let QUIZ = {items:[], index:0, deckId:null, running:false};
-function buildAllCards(){ let items=[]; APP_DATA.decks.forEach(d=>{ (d.cards||[]).forEach(c=> items.push({deckId:d.id, front:c.front, back:c.back, cardId:c.id})); }); for(let i=items.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [items[i],items[j]]=[items[j],items[i]]; } return items; }
-function openDeckQuiz(deckId){ const deck = APP_DATA.decks.find(d=>d.id===deckId); if(!deck || !deck.cards || deck.cards.length===0) return alert('Deck trống'); QUIZ.items = deck.cards.map(c=>({deckId:deck.id, front:c.front, back:c.back, cardId:c.id})); for(let i=QUIZ.items.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [QUIZ.items[i],QUIZ.items[j]]=[QUIZ.items[j],QUIZ.items[i]]; } QUIZ.index=0; QUIZ.deckId=deck.id; QUIZ.running=true; showQuiz(); document.getElementById('quizModal').style.display='flex'; document.getElementById('quizModal').setAttribute('aria-hidden','false'); }
-function openAllQuiz(){ QUIZ.items = buildAllCards().slice(0,200); QUIZ.index=0; QUIZ.deckId=null; QUIZ.running=true; showQuiz(); document.getElementById('quizModal').style.display='flex'; document.getElementById('quizModal').setAttribute('aria-hidden','false'); }
-function showQuiz(){ const cur = QUIZ.items[QUIZ.index]; if(!cur){ alert('No cards'); return; } document.getElementById('cardFront').textContent = cur.front; document.getElementById('cardBack').textContent = cur.back; document.getElementById('cardBack').style.display='none'; document.getElementById('cardMeta').textContent = 'Deck: ' + (APP_DATA.decks.find(d=>d.id===cur.deckId)||{name:'Tất cả thẻ'}).name; document.getElementById('quizProgress').textContent = (QUIZ.index+1) + ' / ' + QUIZ.items.length; }
-function revealCard(){ document.getElementById('cardBack').style.display='block'; }
-function markWrong(){ const cur = QUIZ.items[QUIZ.index]; QUIZ.items.push(cur); nextCard(); }
-function markRight(){ nextCard(); }
-function nextCard(){ QUIZ.index++; if(QUIZ.index >= QUIZ.items.length){ alert('Quiz complete 🎉'); closeQuiz(); return; } showQuiz(); }
-function closeQuiz(){ QUIZ = {items:[], index:0, deckId:null, running:false}; document.getElementById('quizModal').style.display='none'; document.getElementById('quizModal').setAttribute('aria-hidden','true'); }
-
-/* Manage modal */
-const manageBtn = document.getElementById('manageBtn');
-const manageModal = document.getElementById('manageModal');
-const topicListEl = document.getElementById('topicList');
-const closeManageBtn = document.getElementById('closeManage');
-const importBtn = document.getElementById('importBtn');
-const fileInput = document.getElementById('fileInput');
-const addDeckBtn = document.getElementById('addDeckBtn');
-const newDeckInput = document.getElementById('newDeckInput');
-const resetBtn = document.getElementById('resetBtn');
-
-manageBtn.addEventListener('click', ()=>{ manageModal.style.display='flex'; manageModal.setAttribute('aria-hidden','false'); renderTopicList(); });
-closeManageBtn.addEventListener('click', ()=>{ manageModal.style.display='none'; manageModal.setAttribute('aria-hidden','true'); });
-importBtn.addEventListener('click', ()=> fileInput.click());
-fileInput.addEventListener('change', async (e)=> { const f = e.target.files[0]; if(!f) return; try{ const txt = await f.text(); const parsed = JSON.parse(txt); const normalized = normalizeParsed(parsed); APP_DATA = ensureDeckIds(normalized); await saveState(APP_DATA); renderLibrary(); renderTopicList(); alert('Import xong: ' + (APP_DATA.decks.length||0) + ' deck(s)'); manageModal.style.display='none'; }catch(err){ alert('Import failed: ' + err.message); } });
-
-addDeckBtn.addEventListener('click', async ()=>{ const name = (newDeckInput.value || '').trim(); if(!name) return alert('Nhập tên deck'); const newDeck = {id: uid('deck'), name: name, description:'', cards:[]}; APP_DATA.decks.push(newDeck); await saveState(APP_DATA); renderLibrary(); renderTopicList(); newDeckInput.value=''; });
-resetBtn.addEventListener('click', ()=> { if(confirm('Reset dữ liệu về demo?')) { APP_DATA = ensureDeckIds(FALLBACK_DATA); saveState(APP_DATA).then(()=>{ renderLibrary(); renderTopicList(); alert('Reset xong'); }); } });
-
-function renderTopicList(){ topicListEl.innerHTML=''; APP_DATA.decks.forEach((d, idx)=>{ const el = document.createElement('div'); el.className='topic-item'; el.innerHTML = '<div style="font-weight:800">'+escapeHtml(d.name) + ' <span class="small muted">(' + (d.cards?d.cards.length:0) +' cards)</span></div>'; const group = document.createElement('div'); const playBtn = document.createElement('button'); playBtn.textContent='Play'; playBtn.addEventListener('click', ()=> openDeckQuiz(d.id)); const delBtn = document.createElement('button'); delBtn.textContent='Del'; delBtn.style.background='#ffdede'; delBtn.style.color='#600'; delBtn.style.marginLeft='8px'; delBtn.addEventListener('click', async ()=> { if(!confirm('Xóa deck "'+d.name+'"?')) return; APP_DATA.decks.splice(idx,1); await saveState(APP_DATA); renderLibrary(); renderTopicList(); }); group.appendChild(playBtn); group.appendChild(delBtn); el.appendChild(group); topicListEl.appendChild(el); }); }
-
-/* Normalize parsed */
-function normalizeParsed(parsed){ if(parsed && parsed.decks && Array.isArray(parsed.decks)) return parsed; if(parsed && typeof parsed === 'object' && !Array.isArray(parsed)){ const decks=[]; for(const k of Object.keys(parsed)){ const v = parsed[k]; const cards=[]; if(Array.isArray(v)){ v.forEach(item=>{ if(typeof item==='string'){ const parts=item.split(/\s*[-–—:]\s*/); cards.push({id: uid('card'), front: parts[0], back: parts[1]||''}); }else if(typeof item==='object'){ const front = item.en || item.word || item.front || item.text || Object.values(item)[0] || ''; const back = item.vi || item.meaning || item.back || item.translation || Object.values(item)[1] || ''; cards.push({id: uid('card'), front, back}); } }); } decks.push({id: uid('deck'), name:k, description:'', cards}); } return {decks}; } if(Array.isArray(parsed)){ const cards = parsed.map(item=>{ if(typeof item==='string'){ const parts=item.split(/\s*[-–—:]\s*/); return {id: uid('card'), front: parts[0], back: parts[1]||''}; } else if(typeof item==='object'){ const front = item.en || item.word || item.front || Object.values(item)[0] || ''; const back = item.vi || item.back || Object.values(item)[1] || ''; return {id: uid('card'), front, back}; } else return {id: uid('card'), front:String(item), back:''}; }); return {decks:[{id:uid('deck'),name:'Imported',cards}]}; } throw new Error('Unsupported data shape'); }
-
-/* Search wiring */
-document.getElementById('searchInput').addEventListener('input', (e)=>{ renderLibrary(e.target.value); });
-
-/* Buttons wiring */
-document.getElementById('continueBtn').addEventListener('click', ()=> openAllQuiz());
-document.getElementById('exportBtn').addEventListener('click', ()=> { const json = JSON.stringify(APP_DATA, null, 2); const blob = new Blob([json], {type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='exported_decks.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
-document.getElementById('revealBtn').addEventListener('click', revealCard);
-document.getElementById('wrongBtn').addEventListener('click', markWrong);
-document.getElementById('rightBtn').addEventListener('click', markRight);
-document.getElementById('quitBtn').addEventListener('click', ()=> { if(confirm('Quit quiz?')) closeQuiz(); });
-document.getElementById('manualBtn').addEventListener('click', ()=> { const d = APP_DATA.decks.find(x=>x.cards && x.cards.length>0); if(!d) return alert('Không có deck'); openDeckQuiz(d.id); });
-document.getElementById('autoBtn').addEventListener('click', ()=> { const items = buildAllCards().slice(0,40); QUIZ.items = items; QUIZ.index=0; QUIZ.running=true; document.getElementById('quizModal').style.display='flex'; document.getElementById('quizModal').setAttribute('aria-hidden','false'); showQuiz(); });
-document.querySelectorAll('.modal .backdrop').forEach(b => b.addEventListener('click', ()=>{ document.querySelectorAll('.modal').forEach(m=>{ m.style.display='none'; m.setAttribute('aria-hidden','true'); }); if(QUIZ.running) closeQuiz(); }));
-
-/* Boot */
-(async function boot(){ await loadInitial(); renderLibrary(); renderTopicList(); })();
-window._APP = { get: ()=>APP_DATA, saveState, openDeckQuiz, openAllQuiz };
-</script>
+    <script src="group_1.js"></script>
+    <script src="group_2.js"></script>
+    <script src="group_3.js"></script>
+    <script src="group_4.js"></script>
+    
+    <script src="app.js"></script>
 </body>
-</html>s
+</html>
