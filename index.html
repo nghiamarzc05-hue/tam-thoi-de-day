@@ -1,1 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>English Flashcards Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo"><i class="fa-solid fa-layer-group"></i><h2>Flashcards Pro</h2></div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-view="dashboard"><i class="fa-solid fa-home"></i><span>Trang chủ</span></button>
+                <button class="nav-item" data-view="study"><i class="fa-solid fa-book-open"></i><span>Học tập</span></button>
+                <button class="nav-item" data-view="review"><i class="fa-solid fa-check-double"></i><span>Ôn tập</span></button>
+                <button class="nav-item" data-view="library"><i class="fa-solid fa-book"></i><span>Thư viện</span></button>
+                <button class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i><span>Cài đặt</span></button>
+            </nav>
+            <div class="search-box"><i class="fa-solid fa-search"></i><input type="text" id="searchInput" placeholder="Tìm chủ đề..."></div>
+            <ul class="deck-list" id="deckList"></ul>
+        </aside>
 
+        <main class="main-content">
+            <header class="top-header">
+                <h1 id="viewTitle">Trang chủ</h1>
+                <button id="themeToggle" class="icon-btn"><i class="fa-solid fa-moon"></i></button>
+            </header>
+
+            <section id="dashboardView" class="view-section active">
+                <div class="stats-grid">
+                    <div class="stat-card squircle"><i class="fa-solid fa-check-circle stat-icon master-color"></i><div class="stat-info"><h3>Đã thuộc</h3><p id="statMastered">0 Từ</p></div></div>
+                    <div class="stat-card squircle"><i class="fa-solid fa-chart-pie stat-icon progress-color"></i><div class="stat-info"><h3>Tiến độ</h3><p id="statProgress">0%</p></div></div>
+                    <div class="stat-card squircle"><i class="fa-solid fa-fire stat-icon streak-color"></i><div class="stat-info"><h3>Chuỗi ngày</h3><p id="statStreak">0 Ngày</p></div></div>
+                </div>
+                <div class="welcome-banner squircle"><h2>Chào mừng trở lại!</h2><p>Vào Thư viện chọn bài học và vuốt thẻ để học nhé.</p></div>
+            </section>
+
+            <section id="studyView" class="view-section">
+                <div class="flashcard-container" id="swipeZone">
+                    <div class="flashcard" id="flashcard">
+                        <div class="card-face card-front squircle">
+                            <span class="pos-badge" id="cardPos"></span>
+                            <h2 id="cardWord">Chưa có dữ liệu</h2>
+                            <p class="ipa" id="cardIpa"></p>
+                        </div>
+                        <div class="card-face card-back squircle">
+                            <h2 id="cardMeaning"></h2>
+                            <p class="example" id="cardExample"></p>
+                            <p class="example" id="cardExampleVi" style="opacity:0.8; margin-top:5px;"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls squircle">
+                    <button class="btn-squircle icon-btn" id="prevBtn"><i class="fa-solid fa-backward"></i></button>
+                    <button class="btn-squircle icon-btn speak-btn" id="speakBtn"><i class="fa-solid fa-volume-high"></i></button>
+                    <button class="btn-squircle btn-danger" id="notMasteredBtn"><i class="fa-solid fa-xmark"></i> Chưa</button>
+                    <button class="btn-squircle btn-outline" id="masterBtn"><i class="fa-solid fa-check"></i> Thuộc</button>
+                    <button class="btn-squircle icon-btn" id="nextBtn"><i class="fa-solid fa-forward"></i></button>
+                </div>
+
+                <div class="listen-mode-wrapper"><button id="listenModeBtn" class="btn-squircle btn-listen"><i class="fa-solid fa-headphones"></i> <span id="listenText">Luyện nghe</span></button></div>
+            </section>
+
+            <section id="reviewView" class="view-section"></section>
+
+            <section id="libraryView" class="view-section">
+                <div class="mobile-search-box search-box squircle"><i class="fa-solid fa-search"></i><input type="text" id="mobileSearchInput" placeholder="Tìm chủ đề..."></div>
+                <ul class="mobile-deck-list deck-list" id="mobileDeckList"></ul>
+            </section>
+
+            <section id="settingsView" class="view-section">
+                <div class="settings-card squircle">
+                    <h3>Cài đặt & Dữ liệu</h3>
+                    <button id="importBtn" class="btn-squircle btn-outline"><i class="fa-solid fa-upload"></i> Nhập dữ liệu (.json)</button>
+                    <input type="file" id="importFile" accept=".json" style="display: none;">
+                    <button id="resetStatsBtn" class="btn-squircle btn-outline btn-danger-outline" style="margin-top:10px;"><i class="fa-solid fa-trash-can"></i> Xóa tiến độ học</button>
+                </div>
+            </section>
+        </main>
+
+        <nav class="bottom-nav" id="bottomNav">
+            <button class="nav-item active" data-view="dashboard"><i class="fa-solid fa-home"></i><span>Trang chủ</span></button>
+            <button class="nav-item" data-view="study"><i class="fa-solid fa-book-open"></i><span>Học</span></button>
+            <button class="nav-item" data-view="review"><i class="fa-solid fa-check-double"></i><span>Ôn tập</span></button>
+            <button class="nav-item" data-view="library"><i class="fa-solid fa-book"></i><span>Thư viện</span></button>
+            <button class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i><span>Cài đặt</span></button>
+        </nav>
+    </div>
+    
+    <script src="group_1.js"></script>
+    <script src="group_2.js"></script>
+    <script src="group_3.js"></script>
+    <script src="group_4.js"></script>
+    
+    <script src="app.js"></script>
+</body>
+</html>
