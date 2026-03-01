@@ -368,3 +368,16 @@ const group_4_decks = [
         ]
     }
 ];
+// Dán đoạn code này VÀO CUỐI file group_1.js hiện tại của bạn
+
+const group_1_decks = [];
+if (typeof window.FLASHCARD_TOPIC_DATA !== 'undefined') {
+    for (let key in window.FLASHCARD_TOPIC_DATA) {
+        let deckData = window.FLASHCARD_TOPIC_DATA[key];
+        group_1_decks.push({
+            id: deckData.topicId,
+            ten: key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+            items: deckData.items
+        });
+    }
+}
