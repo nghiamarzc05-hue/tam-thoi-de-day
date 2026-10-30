@@ -505,6 +505,7 @@ function initDOM() {
         starCardBtn: document.getElementById('starCardBtn'),
 
         studyDeckName: document.getElementById('studyDeckName'),
+        deleteDeckBtn: document.getElementById('deleteDeckBtn'),
         studyProgressPct: document.getElementById('studyProgressPct'),
         studyProgressFill: document.getElementById('studyProgressFill'),
         quickShuffleBtn: document.getElementById('quickShuffleBtn'),
@@ -821,6 +822,7 @@ function renderDeckList(data, target) {
         li.className = 'deck-item';
         let total = deck.items ? deck.items.length : 0;
         let masteredCount = deck.items ? deck.items.filter(item => masteredCards.includes(item.id)).length : 0;
+        const isCustom = deck.id && String(deck.id).startsWith('custom_deck_');
         
         li.innerHTML = `
             <div class="deck-info">
@@ -828,12 +830,29 @@ function renderDeckList(data, target) {
                 <span class="deck-meta">
                     <i class="fa-regular fa-clone"></i> ${total} từ vựng
                     ${masteredCount > 0 ? ` &bull; <span style="color: var(--success); font-weight:600;"><i class="fa-solid fa-check"></i> ${masteredCount} đã thuộc</span>` : ''}
+                    ${isCustom ? ` &bull; <span style="color: var(--primary);"><i class="fa-solid fa-user-pen"></i> Tự tạo</span>` : ''}
                 </span>
             </div>
-            <div class="deck-chevron">
-                <i class="fa-solid fa-arrow-right"></i>
+            <div style="display:flex; align-items:center; gap:10px;">
+                ${isCustom ? `<button class="delete-custom-deck-btn" title="Xóa bộ thẻ này" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem; padding:6px 8px; border-radius:8px; transition:0.2s;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                <div class="deck-chevron">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
             </div>
         `;
+
+        if (isCustom) {
+            const delBtn = li.querySelector('.delete-custom-deck-btn');
+            if (delBtn) {
+                delBtn.addEventListener('mouseenter', () => { delBtn.style.color = 'var(--danger)'; delBtn.style.background = 'rgba(239,68,68,0.1)'; });
+                delBtn.addEventListener('mouseleave', () => { delBtn.style.color = 'var(--text-muted)'; delBtn.style.background = 'none'; });
+                delBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteCustomDeck(deck.id);
+                });
+            }
+        }
+
         li.addEventListener('click', () => loadDeck(deck));
         target.appendChild(li);
     });
@@ -1106,6 +1125,38 @@ function saveCustomDeck() {
     loadDeck(newDeck);
 
     if (typeof confetti !== 'undefined') confetti({ particleCount: 150, spread: 80 });
+}
+
+function deleteCustomDeck(deckId) {
+    if (!deckId) return;
+    const target = customDecks.find(d => d.id === deckId);
+    const name = target ? target.ten : 'bài học này';
+    
+    if (!confirm(`Bạn có chắc muốn xóa bộ thẻ tự tạo "${name}" không?`)) return;
+
+    // Lọc bỏ khỏi customDecks
+    customDecks = customDecks.filter(d => d.id !== deckId);
+    localStorage.setItem('customDecks', JSON.stringify(customDecks));
+
+    // Cập nhật lại toàn bộ danh sách bài học
+    mergeData();
+    populateQuizDecks();
+    renderDeckList(allDecks, DOM.deckList);
+    updateDashboardStats();
+
+    // Nếu đang mở đúng bài này trong không gian học -> chuyển sang bài mặc định
+    if (currentDeck && currentDeck.id === deckId) {
+        if (allDecks.length > 0) {
+            loadDeck(allDecks[0]);
+        } else {
+            currentDeck = null;
+            currentDeckItems = [];
+            showCard();
+        }
+    }
+
+    AudioFX.playPop();
+    alert(`Đã xóa thành công "${name}"!`);
 }
 
 // ========================================================
@@ -1405,6 +1456,13 @@ function loadDeck(deck) {
     currentDeck = deck; 
     currentStudyFilter = 'all';
     applyStudyFilter(currentStudyFilter);
+
+    // Hiển thị nút xóa bài nếu là bài tự tạo
+    const isCustom = deck && deck.id && String(deck.id).startsWith('custom_deck_');
+    if (DOM.deleteDeckBtn) {
+        DOM.deleteDeckBtn.style.display = isCustom ? 'inline-flex' : 'none';
+    }
+
     const studyBtn = document.querySelector('[data-view="study"]');
     if (studyBtn) studyBtn.click();
 }
@@ -2097,6 +2155,15 @@ function setupEventListeners() {
         };
         if (DOM.heroSrsBtn) DOM.heroSrsBtn.addEventListener('click', openSrsReview);
         if (DOM.srsDueStatCard) DOM.srsDueStatCard.addEventListener('click', openSrsReview);
+    }
+
+    if (DOM.deleteDeckBtn) {
+        DOM.deleteDeckBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentDeck && currentDeck.id) {
+                deleteCustomDeck(currentDeck.id);
+            }
+        });
     }
 
     setupFeedEvents();

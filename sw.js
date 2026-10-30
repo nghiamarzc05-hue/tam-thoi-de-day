@@ -1,23 +1,23 @@
-const CACHE_NAME = 'flashcard-pro-v22';
+const CACHE_NAME = 'flashcard-pro-v25';
 const ASSETS = [
     './',
     './index.html',
     './styles.css',
     './app.js',
     './manifest.json',
-    './group_1.js',
-    './group_2.js',
-    './group_3.js',
-    './group_4.js',
-    './group_5.js',
-    './group_6.js',
-    './group_7.js',
-    './group_8.js',
-    './group_9.js',
-    './group_10.js',
-    './group_11.js',
-    './group_12.js',
-    './group_13.js'
+    './data/group_1.js',
+    './data/group_2.js',
+    './data/group_3.js',
+    './data/group_4.js',
+    './data/group_5.js',
+    './data/group_6.js',
+    './data/group_7.js',
+    './data/group_8.js',
+    './data/group_9.js',
+    './data/group_10.js',
+    './data/group_11.js',
+    './data/group_12.js',
+    './data/group_13.js'
 ];
 
 self.addEventListener('install', (e) => {
