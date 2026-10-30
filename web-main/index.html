@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Web Xịn Flashcards Pro</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4F46E5">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-layer-group"></i>
+                <h2>Web Xịn Flashcards</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-view="dashboard"><i class="fa-solid fa-house"></i><span>Trang chủ</span></button>
+                <button class="nav-item" data-view="study"><i class="fa-solid fa-book-open"></i><span>Thẻ học</span></button>
+                <button class="nav-item" data-view="cloze"><i class="fa-solid fa-pen-to-square"></i><span>Điền từ</span><span class="nav-new-badge">MỚI</span></button>
+                <button class="nav-item" data-view="feed"><i class="fa-solid fa-bolt-lightning"></i><span>TikTok Feed</span><span class="nav-hot-badge">HOT</span></button>
+                <button class="nav-item" data-view="match"><i class="fa-solid fa-gamepad"></i><span>Speed Match</span><span class="nav-new-badge">GAME</span></button>
+                <button class="nav-item" data-view="zen"><i class="fa-solid fa-spa"></i><span>Zen Focus</span></button>
+                <button class="nav-item" data-view="quiz"><i class="fa-solid fa-brain"></i><span>Trắc nghiệm</span></button>
+                <button class="nav-item" data-view="starred"><i class="fa-solid fa-star"></i><span>Từ yêu thích</span></button>
+                <button class="nav-item" data-view="library"><i class="fa-solid fa-magnifying-glass"></i><span>Tìm kiếm</span></button>
+                <button class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i><span>Cài đặt</span></button>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="top-bar-title-wrap">
+                    <h1 id="viewTitle">Trang chủ</h1>
+                    <p id="viewSubtitle" class="view-subtitle">Học từ vựng thông minh mỗi ngày</p>
+                </div>
+                <div class="top-bar-actions">
+                    <button id="quickShuffleBtn" class="action-pill-btn" title="Xáo trộn từ vựng" style="display: none;">
+                        <i class="fa-solid fa-shuffle"></i> <span>Xáo trộn</span>
+                    </button>
+                    <button id="autoPlayBtn" class="action-pill-btn" title="Tự động phát thẻ và đọc" style="display: none;">
+                        <i class="fa-solid fa-play"></i> <span>Tự động học</span>
+                    </button>
+                    <button id="fullscreenBtn" class="action-pill-btn" title="Chế độ tập trung toàn màn hình" style="display: none;">
+                        <i class="fa-solid fa-expand"></i> <span>Toàn màn hình</span>
+                    </button>
+                    <button id="headerThemeBtn" class="action-icon-pill" title="Đổi giao diện Sáng/Tối">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- 1. DASHBOARD VIEW -->
+            <section id="dashboardView" class="view-section active">
+                <!-- HERO WELCOME BANNER -->
+                <div class="hero-banner">
+                    <div class="hero-content">
+                        <div class="hero-tag"><i class="fa-solid fa-sparkles"></i> Luyện tập hôm nay</div>
+                        <h2 class="hero-title">Chào mừng trở lại! Sẵn sàng bứt phá từ vựng?</h2>
+                        <p class="hero-desc">Duy trì việc ôn tập 10 phút mỗi ngày để tăng tốc độ ghi nhớ lên gấp 3 lần.</p>
+                        <div class="hero-actions">
+                            <button id="heroContinueBtn" class="primary-action-btn">
+                                <i class="fa-solid fa-bolt"></i> Học tiếp ngay
+                            </button>
+                            <button id="heroSrsBtn" class="action-pill-btn hero-srs-pill" style="border-color: #6366F1; color: var(--primary);">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Ôn SRS (<span id="heroSrsCount">0</span>)
+                            </button>
+                            <button id="heroClozeBtn" class="action-pill-btn hero-cloze-pill">
+                                <i class="fa-solid fa-pen-to-square"></i> Điền từ vào câu
+                            </button>
+                            <button id="heroFeedBtn" class="action-pill-btn hero-feed-pill">
+                                <i class="fa-solid fa-bolt-lightning"></i> Lướt TikTok Feed
+                            </button>
+                            <button id="heroMatchBtn" class="action-pill-btn hero-match-pill">
+                                <i class="fa-solid fa-gamepad"></i> Game Ghép Từ
+                            </button>
+                            <button id="heroZenBtn" class="action-pill-btn hero-zen-pill">
+                                <i class="fa-solid fa-spa"></i> Zen Focus
+                            </button>
+                        </div>
+                    </div>
+                    <div class="hero-graphic">
+                        <div class="floating-badge badge-1"><i class="fa-solid fa-fire"></i> Đang cháy!</div>
+                        <div class="floating-badge badge-2"><i class="fa-solid fa-star"></i> Pro Vocab</div>
+                        <div class="hero-icon-circle"><i class="fa-solid fa-graduation-cap"></i></div>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fa-solid fa-fire" style="color: #FF725B; background: rgba(255, 114, 91, 0.1);"></i>
+                        <div class="stat-info">
+                            <p>Chuỗi học</p>
+                            <h3 id="statStreak">0 ngày</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card" id="srsDueStatCard" style="cursor: pointer;" title="Nhấn để ôn tập các từ đến hạn theo thuật toán Spaced Repetition">
+                        <i class="fa-solid fa-clock-rotate-left" style="color: #6366F1; background: rgba(99, 102, 241, 0.12);"></i>
+                        <div class="stat-info">
+                            <p>Cần ôn hôm nay (SRS)</p>
+                            <h3 id="statSrsDue">0 từ</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fa-solid fa-check-circle" style="color: var(--success); background: rgba(16, 185, 129, 0.1);"></i>
+                        <div class="stat-info">
+                            <p>Đã thuộc</p>
+                            <h3 id="statMastered">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card daily-goal-stat-card">
+                        <div class="radial-goal-container">
+                            <svg class="radial-progress-svg" viewBox="0 0 44 44">
+                                <circle class="radial-bg" cx="22" cy="22" r="18" />
+                                <circle class="radial-bar" id="radialGoalBar" cx="22" cy="22" r="18" />
+                            </svg>
+                            <div class="radial-goal-icon"><i class="fa-solid fa-bullseye"></i></div>
+                        </div>
+                        <div class="stat-info">
+                            <p>Mục tiêu hôm nay</p>
+                            <h3 id="dailyGoalText">0 / 15 từ</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3.1 HEATMAP HOẠT ĐỘNG HỌC TẬP -->
+                <div class="dashboard-card-wrap">
+                    <div class="card-section-header">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <i class="fa-regular fa-calendar-check" style="color:var(--primary); font-size:1.2rem;"></i>
+                            <strong>Nhật Ký Học Tập (30 Ngày Qua)</strong>
+                        </div>
+                        <span class="heatmap-legend"><small>Ít</small> <span class="heat-box l-0"></span><span class="heat-box l-1"></span><span class="heat-box l-2"></span><span class="heat-box l-3"></span> <small>Nhiều</small></span>
+                    </div>
+                    <div class="heatmap-grid" id="activityHeatmap"></div>
+                </div>
+
+                <!-- 3.2 DANH HIỆU & HUY HIỆU -->
+                <div class="dashboard-card-wrap" style="margin-top: 25px;">
+                    <div class="card-section-header">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <i class="fa-solid fa-medal" style="color:var(--warning); font-size:1.2rem;"></i>
+                            <strong>Huy Hiệu & Danh Hiệu Đạt Được</strong>
+                        </div>
+                        <span id="badgeUnlockedCount" class="badge-count">0/5</span>
+                    </div>
+                    <div class="badges-flex" id="badgesContainer"></div>
+                </div>
+
+                <div class="section-heading-wrap" style="margin-top: 35px;">
+                    <div>
+                        <h3>Bộ thẻ bài học</h3>
+                        <p style="font-size:0.85rem; color:var(--text-muted); margin-top:2px;">Lướt dọc 3D hoặc xem toàn bộ danh sách lưới</p>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <!-- Nút chuyển đổi chế độ xem: Lướt 3D vs Xem tất cả dạng lưới -->
+                        <div class="view-mode-toggle" id="deckViewModeToggle" style="display:inline-flex; background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-full); padding:2px;">
+                            <button id="modeCarouselBtn" class="mode-toggle-btn active" title="Chế độ lướt 3 thẻ">
+                                <i class="fa-solid fa-layer-group"></i> <span>Lướt 3D</span>
+                            </button>
+                            <button id="modeGridBtn" class="mode-toggle-btn" title="Xem tất cả bộ thẻ">
+                                <i class="fa-solid fa-table-cells"></i> <span>Xem tất cả</span>
+                            </button>
+                        </div>
+                        <button id="openCustomDeckModalBtn" class="action-pill-btn" style="padding: 6px 14px; font-size: 0.82rem;">
+                            <i class="fa-solid fa-plus"></i> Tạo bài học
+                        </button>
+                        <span id="deckTotalCount" class="badge-count">0 bài</span>
+                    </div>
+                </div>
+
+                <!-- 3D VERTICAL CAROUSEL (HIỂN THỊ 3 THẺ: TRÊN - GIỮA - DƯỚI) -->
+                <div class="deck-carousel-stage" id="deckCarouselStage">
+                    <button class="carousel-nav-btn carousel-nav-prev" id="carouselPrevBtn" title="Thẻ trước">
+                        <i class="fa-solid fa-chevron-up"></i>
+                    </button>
+                    
+                    <div class="deck-carousel-track" id="deckCarouselTrack">
+                        <!-- 3 thẻ được render động qua JS: prev, active, next -->
+                    </div>
+
+                    <button class="carousel-nav-btn carousel-nav-next" id="carouselNextBtn" title="Thẻ tiếp theo">
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+
+                    <div class="carousel-pagination" id="carouselPagination"></div>
+                </div>
+
+                <!-- DANH SÁCH TẤT CẢ CÁC BỘ THẺ DẠNG LƯỚI (GRID VIEW) -->
+                <ul class="deck-list" id="deckList" style="display: none;"></ul>
+            </section>
+
+            <!-- 2. STUDY VIEW -->
+            <section id="studyView" class="view-section">
+                <div class="study-container">
+                    <div class="study-progress-bar-wrap">
+                        <div class="study-progress-info">
+                            <span id="studyDeckName">Bài học</span>
+                            <span id="studyProgressPct">0%</span>
+                        </div>
+                        <div class="study-progress-track">
+                            <div class="study-progress-fill" id="studyProgressFill"></div>
+                        </div>
+                    </div>
+
+                    <!-- BỘ CHỌN LỌC ÔN TẬP KHI HỌC / XÁO TRỘN -->
+                    <div class="study-filter-bar">
+                        <span class="study-filter-label"><i class="fa-solid fa-filter"></i> Lọc từ:</span>
+                        <div class="study-filter-buttons">
+                            <button class="study-filter-btn active" data-filter="all">Tất cả (<span id="countFilterAll">0</span>)</button>
+                            <button class="study-filter-btn" data-filter="unmastered">Chưa nhớ (<span id="countFilterUnmastered">0</span>)</button>
+                            <button class="study-filter-btn" data-filter="mastered">Đã thuộc (<span id="countFilterMastered">0</span>)</button>
+                        </div>
+                    </div>
+
+                    <div class="flashcard-wrapper" id="flashcardWrapper">
+                        <div id="flashcard" class="flashcard">
+                            <div class="card-face card-front">
+                                <div class="card-glare" id="cardGlareFront"></div>
+                                <div class="card-badge-top">
+                                    <span class="card-status-badge" id="cardStatusBadge">Mới</span>
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <button class="card-star-btn" id="starCardBtn" title="Lưu từ yêu thích">
+                                            <i class="fa-regular fa-star"></i>
+                                        </button>
+                                        <span class="card-counter-badge" id="cardCounter">0 / 0</span>
+                                    </div>
+                                </div>
+                                <div class="card-content-scroll">
+                                    <h2 id="cardWord">Word</h2>
+                                    <div class="ipa-text" id="cardIpa">/ipa/</div>
+                                    <div class="card-voice-tools">
+                                        <button class="card-quick-speak" id="frontSpeakBtn" title="Phát âm chuẩn">
+                                            <i class="fa-solid fa-volume-high"></i>
+                                        </button>
+                                        <button class="card-mic-btn" id="cardMicBtn" title="Luyện đọc bằng giọng nói (AI Speech Recognition)">
+                                            <i class="fa-solid fa-microphone"></i>
+                                        </button>
+                                    </div>
+                                    <!-- Hộp phản hồi phát âm -->
+                                    <div class="speech-eval-box" id="speechEvalBox" style="display: none;">
+                                        <div class="speech-eval-status" id="speechEvalStatus"><i class="fa-solid fa-circle-dot speech-pulse"></i> Đang lắng nghe bạn đọc...</div>
+                                        <div class="speech-eval-result" id="speechEvalResult"></div>
+                                    </div>
+                                </div>
+                                <div class="hint-text"><i class="fa-solid fa-arrows-rotate"></i> Chạm hoặc phím cách để lật &bull; Nghiêng 3D sống động</div>
+                            </div>
+                            <div class="card-face card-back">
+                                <div class="card-glare" id="cardGlareBack"></div>
+                                <div class="card-badge-top">
+                                    <div class="card-pos-tag" id="cardPos">Từ loại</div>
+                                    <span class="card-counter-badge" id="cardCounterBack">0 / 0</span>
+                                </div>
+                                <div class="card-content-scroll">
+                                    <h3 id="cardMeaning">Nghĩa tiếng Việt</h3>
+                                    <div class="example-box">
+                                        <div class="example-en" id="cardExampleEn">English Example</div>
+                                        <div class="example-vi" id="cardExampleVi">Nghĩa tiếng Việt ví dụ</div>
+                                    </div>
+                                </div>
+                                <div class="hint-text"><i class="fa-solid fa-arrows-rotate"></i> Chạm để quay lại mặt trước</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- THANH ĐÁNH GIÁ SRS KHI HỌC THẺ (LẠI - KHÓ - TỐT - DỄ) -->
+                    <div class="srs-rating-container" id="srsRatingContainer">
+                        <div class="srs-rating-label">Mức độ ghi nhớ (Spaced Repetition SM-2):</div>
+                        <div class="srs-rating-buttons">
+                            <button class="srs-btn srs-again" data-rating="1" title="Chưa nhớ (Ôn lại sau 10 phút)">
+                                <span>Lại (1)</span>
+                                <small>&lt; 10m</small>
+                            </button>
+                            <button class="srs-btn srs-hard" data-rating="2" title="Thấy khó (Ôn lại sau 1 ngày)">
+                                <span>Khó (2)</span>
+                                <small>1 ngày</small>
+                            </button>
+                            <button class="srs-btn srs-good" data-rating="3" title="Nhớ tốt (Ôn lại sau 3 ngày)">
+                                <span>Tốt (3)</span>
+                                <small>3 ngày</small>
+                            </button>
+                            <button class="srs-btn srs-easy" data-rating="4" title="Quá dễ (Ôn lại sau 7 ngày)">
+                                <span>Dễ (4)</span>
+                                <small>7 ngày</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="study-controls">
+                        <button id="prevBtn" class="control-btn" title="Từ trước (Mũi tên trái)"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button id="notMasteredBtn" class="control-btn btn-action-unmaster" title="Chưa nhớ"><i class="fa-solid fa-xmark"></i></button>
+                        <button id="studyMicBtn" class="control-btn mic-btn" title="Luyện đọc giọng nói (Mic)"><i class="fa-solid fa-microphone"></i></button>
+                        <button id="speakBtn" class="control-btn speak-btn" title="Nghe phát âm"><i class="fa-solid fa-volume-high"></i></button>
+                        <button id="masterBtn" class="control-btn btn-action-master" title="Đã thuộc (Enter)"><i class="fa-solid fa-check"></i></button>
+                        <button id="nextBtn" class="control-btn" title="Từ tiếp theo (Mũi tên phải)"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+
+                    <div class="shortcut-hints">
+                        <span><kbd>Space</kbd> Lật thẻ</span>
+                        <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd> Chuyển từ</span>
+                        <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> Chấm điểm SRS</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2.0 CLOZE TEST (ĐIỀN TỪ VÀO CÂU VÍ DỤ / NGHE GÕ TỪ) -->
+            <section id="clozeView" class="view-section">
+                <div class="cloze-container">
+                    <div id="clozeStartPanel" class="quiz-card cloze-start-card">
+                        <div class="cloze-badge-icon"><i class="fa-solid fa-pen-to-square"></i></div>
+                        <h2>Luyện Điền Từ Vào Ngữ Cảnh</h2>
+                        <p style="color: var(--text-muted); margin-bottom: 25px;">Thử thách đoán và gõ đúng từ vựng vào chỗ trống trong câu ví dụ thực tế.</p>
+                        
+                        <div class="quiz-select-wrap">
+                            <label style="font-weight: 700; display: block; margin-bottom: 8px;">Chọn bộ từ thực hành:</label>
+                            <select id="clozeDeckSelect" class="custom-select"></select>
+                        </div>
+
+                        <div class="cloze-mode-options" style="margin: 20px 0; display: flex; gap: 12px; justify-content: center;">
+                            <label class="cloze-mode-chip active">
+                                <input type="radio" name="clozeMode" value="cloze" checked style="display:none;">
+                                <i class="fa-solid fa-align-left"></i> Điền vào câu
+                            </label>
+                            <label class="cloze-mode-chip">
+                                <input type="radio" name="clozeMode" value="spelling" style="display:none;">
+                                <i class="fa-solid fa-headphones"></i> Nghe & Gõ từ
+                            </label>
+                        </div>
+
+                        <button id="startClozeBtn" class="primary-action-btn">
+                            <i class="fa-solid fa-play"></i> Bắt đầu thực hành
+                        </button>
+                    </div>
+
+                    <div id="clozePlayPanel" class="cloze-play-panel" style="display: none;">
+                        <div class="quiz-top-info">
+                            <div class="quiz-score-pill"><i class="fa-solid fa-star"></i> Điểm: <strong id="clozeScore">0</strong></div>
+                            <div class="quiz-step-pill"><span id="clozeCurrentStep">1</span> / <span id="clozeTotalStep">10</span></div>
+                        </div>
+
+                        <div class="cloze-card-box">
+                            <div class="cloze-hint-meaning" id="clozeHintMeaning">Nghĩa tiếng Việt</div>
+                            <div class="cloze-sentence-display" id="clozeSentence">The ______ is near my house.</div>
+                            
+                            <div class="cloze-audio-row">
+                                <button id="clozeSpeakBtn" class="action-pill-btn" title="Nghe câu ví dụ">
+                                    <i class="fa-solid fa-volume-high"></i> <span>Nghe câu</span>
+                                </button>
+                                <button id="clozeHintBtn" class="action-pill-btn" title="Hiện chữ cái gợi ý đầu tiên">
+                                    <i class="fa-solid fa-lightbulb"></i> <span>Gợi ý ký tự</span>
+                                </button>
+                            </div>
+
+                            <form id="clozeForm" class="cloze-input-form" onsubmit="return false;">
+                                <div class="cloze-input-wrap">
+                                    <input type="text" id="clozeInput" class="cloze-text-input" placeholder="Nhập từ còn thiếu..." autocomplete="off" autocapitalize="none">
+                                    <button type="submit" id="clozeSubmitBtn" class="cloze-submit-btn">
+                                        <i class="fa-solid fa-arrow-right"></i>
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div class="cloze-feedback-msg" id="clozeFeedbackMsg"></div>
+                        </div>
+                    </div>
+
+                    <div id="clozeResultPanel" class="quiz-card cloze-result-card" style="display: none;">
+                        <div class="quiz-result-trophy"><i class="fa-solid fa-medal" style="color: var(--warning);"></i></div>
+                        <h2>Hoàn Thành Bài Tập!</h2>
+                        <div class="quiz-final-score" id="clozeFinalScore">10/10</div>
+                        <p id="clozeScoreFeedback" style="color: var(--text-muted); margin-bottom: 25px;">Khả năng nhớ từ trong ngữ cảnh của bạn rất tốt!</p>
+                        <div style="display: flex; gap: 14px; justify-content: center; width: 100%;">
+                            <button id="retryClozeBtn" class="primary-action-btn" style="flex: 1;"><i class="fa-solid fa-rotate-right"></i> Làm lại</button>
+                            <button id="backToDeckClozeBtn" class="action-pill-btn" style="flex: 1; justify-content: center;"><i class="fa-solid fa-arrow-left"></i> Đổi bài</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2.1 TIKTOK VERTICAL FEED VIEW (ĐỘT PHÁ 1) -->
+            <section id="feedView" class="view-section">
+                <div class="feed-container">
+                    <div class="feed-header-bar">
+                        <div class="feed-deck-badge">
+                            <i class="fa-solid fa-layer-group"></i>
+                            <select id="feedDeckSelect" class="feed-deck-select"></select>
+                        </div>
+                        <div class="feed-hint">
+                            <i class="fa-solid fa-arrows-up-down"></i> Cuộn hoặc vuốt lên/xuống &bull; Chạm 2 lần để thả tim
+                        </div>
+                    </div>
+
+                    <div class="feed-stage" id="feedStage">
+                        <div class="feed-card" id="feedCard">
+                            <div class="feed-card-glass">
+                                <div class="feed-badge-pos" id="feedPos">PHRASE</div>
+                                <h1 class="feed-word" id="feedWord">Awesome</h1>
+                                <div class="feed-ipa" id="feedIpa">/ˈɔːsəm/</div>
+                                
+                                <div class="feed-divider"></div>
+                                
+                                <div class="feed-meaning" id="feedMeaning">Tuyệt vời, ấn tượng</div>
+                                <div class="feed-example-card" id="feedExampleCard">
+                                    <div class="feed-ex-en" id="feedExampleEn">"You did an awesome job today!"</div>
+                                    <div class="feed-ex-vi" id="feedExampleVi">"Hôm nay bạn làm rất tuyệt vời!"</div>
+                                </div>
+                            </div>
+
+                            <!-- Side Floating Action Bar kiểu TikTok -->
+                            <div class="feed-floating-actions">
+                                <button class="feed-action-circle" id="feedLikeBtn" title="Thả tim / Yêu thích">
+                                    <i class="fa-solid fa-heart"></i>
+                                    <span id="feedLikeText">Lưu</span>
+                                </button>
+                                <button class="feed-action-circle" id="feedSpeakBtn" title="Nghe đọc chuẩn">
+                                    <i class="fa-solid fa-volume-high"></i>
+                                    <span>Nghe</span>
+                                </button>
+                                <button class="feed-action-circle" id="feedMasterBtn" title="Đánh dấu đã thuộc">
+                                    <i class="fa-solid fa-check"></i>
+                                    <span id="feedMasterText">Thuộc</span>
+                                </button>
+                                <button class="feed-action-circle" id="feedNextBtn" title="Từ kế tiếp">
+                                    <i class="fa-solid fa-arrow-down"></i>
+                                    <span>Tiếp</span>
+                                </button>
+                            </div>
+
+                            <!-- Floating heart animation container -->
+                            <div class="feed-heart-burst" id="feedHeartBurst"></div>
+                        </div>
+                    </div>
+
+                    <div class="feed-bottom-controls">
+                        <button id="feedPrevBtn" class="feed-nav-btn"><i class="fa-solid fa-chevron-up"></i> Từ trước</button>
+                        <span id="feedCounter" class="feed-counter">1 / 40</span>
+                        <button id="feedNextBtnBottom" class="feed-nav-btn">Từ tiếp <i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2.2 SPEED MATCH 60S GAME VIEW (ĐỘT PHÁ 2) -->
+            <section id="matchView" class="view-section">
+                <div class="match-container">
+                    <div id="matchStartPanel" class="quiz-card match-start-card">
+                        <div class="match-badge-icon"><i class="fa-solid fa-gamepad"></i></div>
+                        <h2>Đấu Trường Speed Match</h2>
+                        <p style="color: var(--text-muted); margin-bottom: 25px;">Nối nhanh từ tiếng Anh với nghĩa tiếng Việt tương ứng trong 60 giây. Càng nhanh điểm càng cao!</p>
+                        
+                        <div class="quiz-select-wrap">
+                            <label style="font-weight: 700; display: block; margin-bottom: 8px;">Chọn bộ từ tham gia:</label>
+                            <select id="matchDeckSelect" class="custom-select"></select>
+                        </div>
+
+                        <div class="match-highscore-preview">
+                            <i class="fa-solid fa-trophy" style="color: #F59E0B;"></i> Kỷ lục cao nhất: <strong id="matchHighScoreDisplay">0 điểm</strong>
+                        </div>
+
+                        <button id="startMatchBtn" class="primary-action-btn" style="margin-top: 15px;">
+                            <i class="fa-solid fa-bolt"></i> Bắt đầu thi đấu (60s)
+                        </button>
+                    </div>
+
+                    <div id="matchPlayPanel" class="match-play-panel" style="display: none;">
+                        <div class="match-hud">
+                            <div class="match-hud-item timer-hud">
+                                <i class="fa-solid fa-stopwatch"></i>
+                                <span id="matchTimer">60s</span>
+                            </div>
+                            <div class="match-hud-item combo-hud">
+                                <span id="matchComboBadge" class="combo-badge">Combo x1</span>
+                            </div>
+                            <div class="match-hud-item score-hud">
+                                <i class="fa-solid fa-fire"></i>
+                                <span id="matchScore">0</span> điểm
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar thời gian -->
+                        <div class="match-timer-bar">
+                            <div class="match-timer-fill" id="matchTimerFill"></div>
+                        </div>
+
+                        <div class="match-grid" id="matchGrid">
+                            <!-- 12 Cards được render động -->
+                        </div>
+                    </div>
+
+                    <div id="matchResultPanel" class="quiz-card match-result-card" style="display: none;">
+                        <div class="quiz-result-trophy"><i class="fa-solid fa-crown" style="color: #F59E0B;"></i></div>
+                        <h2>Hết Giờ! Đấu Trí Tuyệt Vời</h2>
+                        <div class="quiz-final-score" id="matchFinalScore">0</div>
+                        <p id="matchResultFeedback" style="color: var(--text-muted); margin-bottom: 20px;">Bạn đã ghép thành công các cặp từ siêu chuẩn xác!</p>
+                        <div style="display: flex; gap: 14px; justify-content: center; width: 100%;">
+                            <button id="retryMatchBtn" class="primary-action-btn" style="flex: 1;"><i class="fa-solid fa-rotate-right"></i> Chơi lại</button>
+                            <button id="backToDeckMatchBtn" class="action-pill-btn" style="flex: 1; justify-content: center;"><i class="fa-solid fa-arrow-left"></i> Đổi bài</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2.3 ZEN FOCUS & AMBIENCE VIEW (ĐỘT PHÁ 3) -->
+            <section id="zenView" class="view-section">
+                <div class="zen-container">
+                    <div class="zen-ambient-shelf">
+                        <div class="zen-shelf-title">
+                            <i class="fa-solid fa-headphones-simple"></i> Âm Thanh Thư Giãn (Web Audio Ambience)
+                        </div>
+                        <div class="zen-sound-chips">
+                            <button class="zen-chip" data-ambient="rain"><i class="fa-solid fa-cloud-rain"></i> Mưa rơi</button>
+                            <button class="zen-chip" data-ambient="waves"><i class="fa-solid fa-water"></i> Sóng biển</button>
+                            <button class="zen-chip" data-ambient="fire"><i class="fa-solid fa-fire"></i> Lò sưởi</button>
+                            <button class="zen-chip" data-ambient="stream"><i class="fa-solid fa-wind"></i> Tiếng suối</button>
+                            <button class="zen-chip zen-chip-stop" id="zenMuteBtn"><i class="fa-solid fa-volume-xmark"></i> Tắt âm</button>
+                        </div>
+                    </div>
+
+                    <div class="zen-study-card">
+                        <div class="zen-card-top">
+                            <span class="zen-deck-label" id="zenDeckName">Giao tiếp hàng ngày</span>
+                            <div class="zen-pomodoro">
+                                <i class="fa-regular fa-clock"></i>
+                                <span id="zenPomoTimer">25:00</span>
+                                <button id="zenPomoToggle" class="zen-pomo-btn" title="Bắt đầu / Tạm dừng"><i class="fa-solid fa-play"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="zen-card-content" id="zenCardContent">
+                            <h2 class="zen-word" id="zenWord">Breathe</h2>
+                            <div class="zen-ipa" id="zenIpa">/briːð/</div>
+                            <div class="zen-meaning" id="zenMeaning">Hít thở sâu, tập trung tinh thần</div>
+                            <div class="zen-example" id="zenExample">"Take a deep breath and start learning."</div>
+                        </div>
+
+                        <div class="zen-actions">
+                            <button class="zen-btn" id="zenPrevBtn"><i class="fa-solid fa-arrow-left"></i> Trước</button>
+                            <button class="zen-btn-speak" id="zenSpeakBtn" title="Nghe đọc"><i class="fa-solid fa-volume-high"></i></button>
+                            <button class="zen-btn-flip" id="zenFlipBtn"><i class="fa-solid fa-arrows-rotate"></i> Xem nghĩa</button>
+                            <button class="zen-btn zen-btn-primary" id="zenNextBtn">Tiếp theo <i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. QUIZ VIEW (TÍNH NĂNG MỚI) -->
+            <section id="quizView" class="view-section">
+                <div class="quiz-container">
+                    <div id="quizStartPanel" class="quiz-card quiz-start-card">
+                        <div class="quiz-badge-icon"><i class="fa-solid fa-brain"></i></div>
+                        <h2>Luyện Tập Trắc Nghiệm</h2>
+                        <p style="color: var(--text-muted); margin-bottom: 25px;">Kiểm tra độ ghi nhớ từ vựng với 4 đáp án nhanh.</p>
+                        
+                        <div class="quiz-select-wrap">
+                            <label style="font-weight: 700; display: block; margin-bottom: 8px;">Chọn bộ từ vựng:</label>
+                            <select id="quizDeckSelect" class="custom-select"></select>
+                        </div>
+
+                        <button id="startQuizBtn" class="primary-action-btn">
+                            <i class="fa-solid fa-play"></i> Bắt đầu thử thách
+                        </button>
+                    </div>
+
+                    <div id="quizPlayPanel" class="quiz-play-panel" style="display: none;">
+                        <div class="quiz-top-info">
+                            <div class="quiz-score-pill"><i class="fa-solid fa-star"></i> Điểm: <strong id="quizScore">0</strong></div>
+                            <div class="quiz-step-pill"><span id="quizCurrentStep">1</span> / <span id="quizTotalStep">10</span></div>
+                        </div>
+
+                        <div class="quiz-question-box">
+                            <span class="quiz-pos-tag" id="quizPosTag">NOUN</span>
+                            <h2 class="quiz-word-question" id="quizQuestionWord">Word</h2>
+                            <button id="quizSpeakBtn" class="card-quick-speak" title="Nghe phát âm">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+
+                        <div class="quiz-options-grid" id="quizOptionsGrid"></div>
+                    </div>
+
+                    <div id="quizResultPanel" class="quiz-card quiz-result-card" style="display: none;">
+                        <div class="quiz-result-trophy"><i class="fa-solid fa-trophy"></i></div>
+                        <h2>Kết Quả Bài Làm!</h2>
+                        <div class="quiz-final-score" id="quizFinalScore">8/10</div>
+                        <p id="quizScoreFeedback" style="color: var(--text-muted); margin-bottom: 25px;">Bạn đã làm rất xuất sắc!</p>
+                        <div style="display: flex; gap: 14px; justify-content: center; width: 100%;">
+                            <button id="retryQuizBtn" class="primary-action-btn" style="flex: 1;"><i class="fa-solid fa-rotate-right"></i> Làm lại</button>
+                            <button id="backToDeckQuizBtn" class="action-pill-btn" style="flex: 1; justify-content: center;"><i class="fa-solid fa-arrow-left"></i> Đổi bài</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. STARRED VIEW (DANH SÁCH YÊU THÍCH MỚI) -->
+            <section id="starredView" class="view-section">
+                <div class="starred-header-banner">
+                    <div>
+                        <h3>Từ Vựng Cần Ôn Tập</h3>
+                        <p style="color: var(--text-muted); font-size: 0.95rem;">Các từ bạn đã đánh dấu sao để tập trung ghi nhớ.</p>
+                    </div>
+                    <button id="studyStarredBtn" class="primary-action-btn" style="display: none;">
+                        <i class="fa-solid fa-book-open"></i> Học các từ này
+                    </button>
+                </div>
+                <ul class="deck-list" id="starredList"></ul>
+            </section>
+
+            <!-- 4. LIBRARY VIEW -->
+            <section id="libraryView" class="view-section">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchInput" placeholder="Tìm kiếm bộ từ hoặc từ vựng (ví dụ: accept, book...)">
+                </div>
+                <div id="searchFilterTags" class="search-filter-tags">
+                    <button class="filter-pill active" data-filter="all">Tất cả</button>
+                    <button class="filter-pill" data-filter="decks">Danh mục bài</button>
+                    <button class="filter-pill" data-filter="words">Từ vựng</button>
+                </div>
+                <ul class="deck-list" id="libraryList"></ul>
+            </section>
+
+            <!-- 5. SETTINGS VIEW -->
+            <section id="settingsView" class="view-section">
+                <div class="settings-card stat-card" style="flex-direction: column; align-items: stretch; gap: 0;">
+                    <h3 style="margin-bottom: 5px;">Cài đặt ứng dụng</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 0.95rem;">Tùy chỉnh trải nghiệm học tập.</p>
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin-bottom: 25px;">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                        <div>
+                            <span style="font-weight: 600; font-size: 1.1rem; color: var(--text-main); display: block;">
+                                <i class="fa-solid fa-palette" style="margin-right: 12px; color: var(--primary);"></i> Gam màu chủ đạo (Accent Theme)
+                            </span>
+                            <small style="color: var(--text-muted);">Tùy biến màu sắc giao diện theo cá tính của bạn</small>
+                        </div>
+                        <div class="color-palette-selector" id="colorPaletteSelector">
+                            <button class="palette-swatch active" data-color="indigo" style="background: #4F46E5;" title="Indigo Dream"></button>
+                            <button class="palette-swatch" data-color="emerald" style="background: #10B981;" title="Emerald Mint"></button>
+                            <button class="palette-swatch" data-color="rose" style="background: #F43F5E;" title="Rose Blossom"></button>
+                            <button class="palette-swatch" data-color="amber" style="background: #F59E0B;" title="Amber Sunset"></button>
+                            <button class="palette-swatch" data-color="cyan" style="background: #06B6D4;" title="Cyan Ocean"></button>
+                            <button class="palette-swatch" data-color="violet" style="background: #8B5CF6;" title="Electric Violet"></button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                        <span style="font-weight: 600; font-size: 1.1rem; color: var(--text-main);">
+                            <i class="fa-solid fa-moon" style="margin-right: 12px; color: var(--primary);"></i> Chế độ Tối
+                        </span>
+                        <label class="theme-switch">
+                            <input type="checkbox" id="themeSwitch">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                        <div>
+                            <span style="font-weight: 600; font-size: 1.1rem; color: var(--text-main); display: block;">
+                                <i class="fa-solid fa-volume-high" style="margin-right: 12px; color: var(--primary);"></i> Giọng đọc phát âm
+                            </span>
+                            <small style="color: var(--text-muted);">Chọn chất giọng Anh - Mỹ (US) hoặc Anh - Anh (UK)</small>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <select id="voiceAccentSelect" class="custom-select" style="width: auto; padding: 6px 14px;">
+                                <option value="US" selected>English (US) - Chuẩn Mỹ</option>
+                                <option value="UK">English (UK) - Chuẩn Anh</option>
+                            </select>
+                            <button id="testVoiceBtn" class="action-pill-btn" style="padding: 6px 12px; font-size: 0.85rem;" title="Bấm nghe thử giọng đọc ngay">
+                                <i class="fa-solid fa-play"></i> <span>Test giọng</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                        <div>
+                            <span style="font-weight: 600; font-size: 1.1rem; color: var(--text-main); display: block;">
+                                <i class="fa-solid fa-bell" style="margin-right: 12px; color: var(--primary);"></i> Âm thanh hiệu ứng (SFX)
+                            </span>
+                            <small style="color: var(--text-muted);">Âm thanh vui tai khi lật thẻ, trả lời đúng/sai</small>
+                        </div>
+                        <label class="theme-switch">
+                            <input type="checkbox" id="sfxSwitch" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                        <div>
+                            <span style="font-weight: 600; font-size: 1.1rem; color: var(--text-main); display: block;">
+                                <i class="fa-solid fa-gauge-high" style="margin-right: 12px; color: var(--primary);"></i> Tốc độ giọng đọc
+                            </span>
+                            <small style="color: var(--text-muted);">Điều chỉnh tốc độ phát âm chuẩn</small>
+                        </div>
+                        <select id="speechRateSelect" class="custom-select" style="width: auto; padding: 6px 14px;">
+                            <option value="0.75">0.75x (Chậm)</option>
+                            <option value="0.9" selected>0.9x (Tự nhiên)</option>
+                            <option value="1.0">1.0x (Bình thường)</option>
+                            <option value="1.2">1.2x (Nhanh)</option>
+                        </select>
+                    </div>
+
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin-bottom: 25px;">
+
+                    <!-- NHÓM 4: SAO LƯU & XUẤT NHẬP DỮ LIỆU -->
+                    <h3 style="margin-bottom: 5px;">Sao lưu & Đồng bộ</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem;">Lưu trữ tiến độ, bài học tự tạo sang file JSON để mở trên thiết bị khác.</p>
+                    <div style="display: flex; gap: 12px; margin-bottom: 25px;">
+                        <button id="exportDataBtn" class="action-pill-btn" style="flex:1; justify-content:center;">
+                            <i class="fa-solid fa-file-export"></i> Xuất dữ liệu (Backup)
+                        </button>
+                        <button id="importDataBtn" class="action-pill-btn" style="flex:1; justify-content:center;">
+                            <i class="fa-solid fa-file-import"></i> Nhập dữ liệu (Restore)
+                        </button>
+                        <input type="file" id="importFileInput" accept=".json" style="display: none;">
+                    </div>
+
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin-bottom: 25px;">
+
+                    <button id="resetStatsBtn" class="btn-danger-outline" style="width: 100%; padding: 14px; border-radius: 14px; border: 2px solid var(--danger); background: transparent; color: var(--danger); font-size: 1.05rem; font-weight: bold; cursor: pointer; transition: 0.3s;">
+                        <i class="fa-solid fa-trash-can" style="margin-right: 8px;"></i> Xóa toàn bộ tiến độ
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <nav class="bottom-nav" id="bottomNav">
+            <button class="nav-item active" data-view="dashboard"><i class="fa-solid fa-house"></i><span>Trang chủ</span></button>
+            <button class="nav-item" data-view="study"><i class="fa-solid fa-book-open"></i><span>Học thẻ</span></button>
+            <button class="nav-item" data-view="cloze"><i class="fa-solid fa-pen-to-square"></i><span>Điền từ</span></button>
+            <button class="nav-item" data-view="feed"><i class="fa-solid fa-bolt-lightning"></i><span>Feed</span></button>
+            <button class="nav-item" data-view="match"><i class="fa-solid fa-gamepad"></i><span>Game</span></button>
+            <button class="nav-item" data-view="zen"><i class="fa-solid fa-spa"></i><span>Zen</span></button>
+            <button class="nav-item" data-view="quiz"><i class="fa-solid fa-brain"></i><span>Quiz</span></button>
+            <button class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i><span>Cài đặt</span></button>
+        </nav>
+    </div>
+
+    <!-- MODAL TỰ TẠO BÀI HỌC MỚI (CUSTOM DECK MODAL) -->
+    <div id="customDeckModal" class="modal-overlay" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--primary); margin-right:8px;"></i>Tạo Bài Học Mới</h3>
+                <button id="closeCustomDeckModalBtn" class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- AI GENERATOR BANNER -->
+                <div class="ai-generator-card" style="background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(236,72,153,0.08)); border: 1px dashed var(--primary); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-weight: 700; font-size: 0.95rem; color: var(--primary); display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-robot"></i> Trợ lý AI Tự Sinh Từ Vựng
+                        </span>
+                        <span style="font-size: 0.75rem; background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-weight: 600;">Miễn phí</span>
+                    </div>
+                    <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px;">
+                        Chỉ cần nhập tên chủ đề (ví dụ: <em>"Giao tiếp sân bay", "IELTS Môi trường", "Nhà hàng quán ăn"</em>), AI sẽ tự động sinh danh sách từ kèm nghĩa, phiên âm và câu ví dụ!
+                    </p>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="aiTopicInput" class="form-input" style="flex: 1; padding: 8px 12px; font-size: 0.9rem;" placeholder="Nhập chủ đề muốn AI tạo...">
+                        <button type="button" id="aiGenerateBtn" class="primary-action-btn" style="padding: 8px 16px; font-size: 0.88rem; white-space: nowrap;">
+                            <i class="fa-solid fa-sparkles"></i> AI Sinh Data
+                        </button>
+                    </div>
+                    <div id="aiGenStatus" style="font-size: 0.8rem; margin-top: 6px; display: none;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Tên chủ đề bài học:</label>
+                    <input type="text" id="customDeckTitle" class="form-input" placeholder="Ví dụ: Phỏng vấn xin việc, Du lịch Nhật Bản...">
+                </div>
+                <div class="form-group">
+                    <label>Danh sách từ vựng (mỗi dòng 1 từ: <code>Từ | Nghĩa | Phiên âm | Câu ví dụ</code>):</label>
+                    <textarea id="customDeckWords" class="form-textarea" rows="7" placeholder="Ví dụ:
+resume | hồ sơ xin việc | /ˈrɛzəmeɪ/ | Please send your resume.
+interview | phỏng vấn | /ˈɪntərvjuː/ | I have a job interview tomorrow.
+salary | tiền lương | /ˈsæləri/ | The starting salary is competitive.
+experience | kinh nghiệm | /ɪkˈspɪriəns/ | She has five years of experience."></textarea>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">
+                    <i class="fa-solid fa-circle-info"></i> Hệ thống sẽ tự động tạo bài flashcard và đưa vào danh sách học, luyện phát âm AI cũng như Quiz trắc nghiệm.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelCustomDeckBtn" class="action-pill-btn">Hủy bỏ</button>
+                <button id="saveCustomDeckBtn" class="primary-action-btn"><i class="fa-solid fa-check"></i> Lưu bài học</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nạp dữ liệu 13 nhóm từ thư mục data -->
+    <script src="data/group_1.js"></script>
+    <script src="data/group_2.js"></script>
+    <script src="data/group_3.js"></script>
+    <script src="data/group_4.js"></script>
+    <script src="data/group_5.js"></script>
+    <script src="data/group_6.js"></script>
+    <script src="data/group_7.js"></script>
+    <script src="data/group_8.js"></script>
+    <script src="data/group_9.js"></script>
+    <script src="data/group_10.js"></script>
+    <script src="data/group_11.js"></script>
+    <script src="data/group_12.js"></script>
+    <script src="data/group_13.js"></script>
+    
+    <script src="app.js"></script>
+</body>
+</html>
