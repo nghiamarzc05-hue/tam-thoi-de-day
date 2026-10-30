@@ -2993,6 +2993,49 @@ function setupSrsEvents() {
 // HỆ THỐNG PHÂN TÍCH NGỮ ÂM & CHẤM ĐIỂM NÂNG CAO (ACCENT & STRESS)
 // ========================================================
 
+// Tính độ tương đồng giữa 2 chuỗi theo thuật toán khoảng cách Levenshtein (0 - 100%)
+function calculateLevenshteinSimilarity(s1, s2) {
+    if (!s1 && !s2) return 100;
+    if (!s1 || !s2) return 0;
+    if (s1 === s2) return 100;
+
+    const longer = s1.length > s2.length ? s1 : s2;
+    const shorter = s1.length > s2.length ? s2 : s1;
+    const longerLength = longer.length;
+    if (longerLength === 0) return 100;
+
+    const costs = [];
+    for (let i = 0; i <= longer.length; i++) {
+        let lastValue = i;
+        for (let j = 0; j <= shorter.length; j++) {
+            if (i === 0) {
+                costs[j] = j;
+            } else if (j > 0) {
+                let newValue = costs[j - 1];
+                if (longer.charAt(i - 1) !== shorter.charAt(j - 1)) {
+                    newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                }
+                costs[j - 1] = lastValue;
+                lastValue = newValue;
+            }
+        }
+        if (i > 0) costs[shorter.length] = lastValue;
+    }
+
+    const distance = costs[shorter.length];
+    const similarity = ((longerLength - distance) / longerLength) * 100;
+    return Math.max(0, Math.min(100, Math.round(similarity)));
+}
+
+// Hiệu ứng pháo hoa nổi lửa chúc mừng khi đạt điểm cao
+function noiLua() {
+    if (typeof confetti !== 'undefined') {
+        try {
+            confetti({ particleCount: 75, spread: 70, origin: { y: 0.7 } });
+        } catch (e) {}
+    }
+}
+
 // Chuyển từ sang xâu biểu diễn ngữ âm theo thuật toán Double Metaphone giản lược
 function getPhoneticCode(word) {
     if (!word) return '';
@@ -3244,85 +3287,92 @@ function setupSpeechRecognition() {
             try { speechRecognitionInstance.stop(); } catch (e) {}
         }
 
-        const currentItem = (currentDeckItems && currentDeckItems[currentCardIndex]) ? currentDeckItems[currentCardIndex] : null;
-        const target = currentItem ? currentItem.term : '';
-        const ipa = currentItem ? (currentItem.ipa || '') : '';
+        try {
+            const currentItem = (currentDeckItems && currentDeckItems[currentCardIndex]) ? currentDeckItems[currentCardIndex] : null;
+            const target = currentItem ? currentItem.term : '';
+            const ipa = currentItem ? (currentItem.ipa || '') : '';
 
-        const spoken = (accumulatedTranscript || (recognizedCandidates[0] || '')).trim();
+            const spoken = (accumulatedTranscript || (recognizedCandidates[0] || '')).trim();
 
-        if (!spoken) {
+            if (!spoken) {
+                if (DOM.speechEvalStatus) {
+                    DOM.speechEvalStatus.innerHTML = `<span style="color:var(--warning); font-size:0.88rem;"><i class="fa-solid fa-triangle-exclamation"></i> Chưa nghe rõ giọng nói. Bạn hãy nói to hơn hoặc để gần micro hơn nhé!</span>`;
+                }
+                if (DOM.speechEvalResult) {
+                    DOM.speechEvalResult.innerHTML = `<div style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding:4px;"><i class="fa-solid fa-rotate-right"></i> Nhấn vào nút Micro để thử lại</div>`;
+                }
+                return;
+            }
+
+            // Chọn kết quả phù hợp nhất trong các candidates nhận diện
+            let bestResult = evaluateSpeechPronunciation(spoken, target, ipa, voiceAccent);
+            let bestSpoken = spoken;
+            for (let k = 0; k < recognizedCandidates.length; k++) {
+                const cand = recognizedCandidates[k];
+                if (!cand) continue;
+                const res = evaluateSpeechPronunciation(cand, target, ipa, voiceAccent);
+                if (res && res.totalScore > bestResult.totalScore) {
+                    bestResult = res;
+                    bestSpoken = cand;
+                }
+            }
+
+            const result = bestResult;
+            const score = result.totalScore;
+
+            let scoreBadge = '';
+            let feedbackTitle = '';
+
+            if (score >= 85) {
+                if (AudioFX && AudioFX.playCorrect) AudioFX.playCorrect();
+                noiLua();
+                scoreBadge = `<span style="background:var(--success); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem; box-shadow:0 2px 8px rgba(16,185,129,0.3);"><i class="fa-solid fa-crown"></i> ${score}/100 ĐIỂM</span>`;
+                feedbackTitle = `<span class="speech-match-good"><i class="fa-solid fa-circle-check"></i> Xuất sắc! Phát âm chuẩn bản xứ (Native Level)!</span>`;
+                if (typeof confetti !== 'undefined') confetti({ particleCount: 90, spread: 70 });
+            } else if (score >= 65) {
+                if (AudioFX && AudioFX.playPop) AudioFX.playPop();
+                scoreBadge = `<span style="background:var(--warning); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem;"><i class="fa-solid fa-thumbs-up"></i> ${score}/100 ĐIỂM</span>`;
+                feedbackTitle = `<span style="color:var(--warning); font-weight:700;"><i class="fa-solid fa-circle-exclamation"></i> Khá tốt! Cần chú ý thêm âm đuôi hoặc trọng âm!</span>`;
+            } else {
+                if (AudioFX && AudioFX.playWrong) AudioFX.playWrong();
+                scoreBadge = `<span style="background:var(--danger); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem;"><i class="fa-solid fa-circle-xmark"></i> ${score}/100 ĐIỂM</span>`;
+                feedbackTitle = `<span class="speech-match-bad"><i class="fa-solid fa-triangle-exclamation"></i> Chưa chuẩn! Hãy nghe mẫu và thử phát âm lại nhé!</span>`;
+            }
+
             if (DOM.speechEvalStatus) {
-                DOM.speechEvalStatus.innerHTML = `<span style="color:var(--warning); font-size:0.88rem;"><i class="fa-solid fa-triangle-exclamation"></i> Chưa nghe rõ giọng nói. Bạn hãy nói to hơn hoặc để gần micro hơn nhé!</span>`;
+                DOM.speechEvalStatus.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        ${feedbackTitle} ${scoreBadge}
+                    </div>
+                `;
             }
+
             if (DOM.speechEvalResult) {
-                DOM.speechEvalResult.innerHTML = `<div style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding:4px;"><i class="fa-solid fa-rotate-right"></i> Nhấn vào nút Micro để thử lại</div>`;
+                const feedbackItems = (result.feedback || []).map(f => `<div style="margin-top:3px;">${f}</div>`).join('');
+                DOM.speechEvalResult.innerHTML = `
+                    <div style="font-size:0.86rem; line-height:1.45; color:var(--text-main); background:var(--bg-main); padding:10px 12px; border-radius:10px; border:1px solid var(--border-color); text-align:left;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+                            <div>Bạn đọc: "<strong style="color:var(--text-main);">${bestSpoken}</strong>"</div>
+                            <div>Mục tiêu: "<strong style="color:var(--primary);">${target}</strong>" <span style="font-size:0.8rem; color:var(--text-muted);">${ipa ? `[${ipa}]` : ''}</span></div>
+                        </div>
+                        <!-- Chi tiết 4 thanh chỉ số năng lực -->
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.75rem; margin-bottom:6px;">
+                            <div>Đúng từ ngữ: <strong>${result.accuracyScore}%</strong></div>
+                            <div>Khớp ngữ âm: <strong>${result.phoneticSim}%</strong></div>
+                            <div>Bật âm đuôi: <strong>${result.endingSoundScore}%</strong></div>
+                            <div>Accent & Trọng âm: <strong>${result.stressScore}%</strong></div>
+                        </div>
+                        <div style="font-size:0.8rem; color:var(--text-muted); border-top:1px dashed var(--border-color); padding-top:6px; margin-top:4px;">
+                            ${feedbackItems}
+                        </div>
+                    </div>
+                `;
             }
-            return;
-        }
-
-        // Chọn kết quả phù hợp nhất trong các candidates nhận diện
-        let bestResult = evaluateSpeechPronunciation(spoken, target, ipa, voiceAccent);
-        let bestSpoken = spoken;
-        for (let k = 0; k < recognizedCandidates.length; k++) {
-            const cand = recognizedCandidates[k];
-            if (!cand) continue;
-            const res = evaluateSpeechPronunciation(cand, target, ipa, voiceAccent);
-            if (res.totalScore > bestResult.totalScore) {
-                bestResult = res;
-                bestSpoken = cand;
+        } catch (err) {
+            console.error("[Speech] Scoring error:", err);
+            if (DOM.speechEvalStatus) {
+                DOM.speechEvalStatus.innerHTML = `<span style="color:var(--danger); font-size:0.85rem;"><i class="fa-solid fa-circle-exclamation"></i> Có lỗi khi xử lý kết quả: ${err.message}</span>`;
             }
-        }
-
-        const result = bestResult;
-        const score = result.totalScore;
-
-        let scoreBadge = '';
-        let feedbackTitle = '';
-
-        if (score >= 85) {
-            AudioFX.playCorrect();
-            noiLua();
-            scoreBadge = `<span style="background:var(--success); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem; box-shadow:0 2px 8px rgba(16,185,129,0.3);"><i class="fa-solid fa-crown"></i> ${score}/100 ĐIỂM</span>`;
-            feedbackTitle = `<span class="speech-match-good"><i class="fa-solid fa-circle-check"></i> Xuất sắc! Phát âm chuẩn bản xứ (Native Level)!</span>`;
-            if (typeof confetti !== 'undefined') confetti({ particleCount: 90, spread: 70 });
-        } else if (score >= 65) {
-            AudioFX.playPop();
-            scoreBadge = `<span style="background:var(--warning); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem;"><i class="fa-solid fa-thumbs-up"></i> ${score}/100 ĐIỂM</span>`;
-            feedbackTitle = `<span style="color:var(--warning); font-weight:700;"><i class="fa-solid fa-circle-exclamation"></i> Khá tốt! Cần chú ý thêm âm đuôi hoặc trọng âm!</span>`;
-        } else {
-            AudioFX.playWrong();
-            scoreBadge = `<span style="background:var(--danger); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem;"><i class="fa-solid fa-circle-xmark"></i> ${score}/100 ĐIỂM</span>`;
-            feedbackTitle = `<span class="speech-match-bad"><i class="fa-solid fa-triangle-exclamation"></i> Chưa chuẩn! Hãy nghe mẫu và thử phát âm lại nhé!</span>`;
-        }
-
-        if (DOM.speechEvalStatus) {
-            DOM.speechEvalStatus.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    ${feedbackTitle} ${scoreBadge}
-                </div>
-            `;
-        }
-
-        if (DOM.speechEvalResult) {
-            const feedbackItems = result.feedback.map(f => `<div style="margin-top:3px;">${f}</div>`).join('');
-            DOM.speechEvalResult.innerHTML = `
-                <div style="font-size:0.86rem; line-height:1.45; color:var(--text-main); background:var(--bg-main); padding:10px 12px; border-radius:10px; border:1px solid var(--border-color); text-align:left;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
-                        <div>Bạn đọc: "<strong style="color:var(--text-main);">${bestSpoken}</strong>"</div>
-                        <div>Mục tiêu: "<strong style="color:var(--primary);">${target}</strong>" <span style="font-size:0.8rem; color:var(--text-muted);">${ipa ? `[${ipa}]` : ''}</span></div>
-                    </div>
-                    <!-- Chi tiết 4 thanh chỉ số năng lực -->
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.75rem; margin-bottom:6px;">
-                        <div>Đúng từ ngữ: <strong>${result.accuracyScore}%</strong></div>
-                        <div>Khớp ngữ âm: <strong>${result.phoneticSim}%</strong></div>
-                        <div>Bật âm đuôi: <strong>${result.endingSoundScore}%</strong></div>
-                        <div>Accent & Trọng âm: <strong>${result.stressScore}%</strong></div>
-                    </div>
-                    <div style="font-size:0.8rem; color:var(--text-muted); border-top:1px dashed var(--border-color); padding-top:6px; margin-top:4px;">
-                        ${feedbackItems}
-                    </div>
-                </div>
-            `;
         }
     };
 
