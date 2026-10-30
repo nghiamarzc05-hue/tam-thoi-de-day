@@ -313,34 +313,64 @@ function initVoices() {
     window.speechSynthesis.onvoiceschanged = findVoice;
 }
 
+let currentAudioPlayer = null;
+
 function playWordSound(wordText) {
     const text = wordText || (currentDeckItems && currentDeckItems[currentCardIndex] ? currentDeckItems[currentCardIndex].term : (currentDeck && currentDeck.items && currentDeck.items[currentCardIndex] ? currentDeck.items[currentCardIndex].term : ''));
     if (!text) return;
 
-    if ('speechSynthesis' in window) {
+    const cleanText = text.trim();
+    const type = (voiceAccent === 'UK') ? 1 : 2;
+
+    // 1. Phát âm thanh trực tiếp bằng audio chuẩn bản xứ (chuẩn 100% trên cả GitHub Pages, điện thoại, máy tính)
+    try {
+        if (currentAudioPlayer) {
+            currentAudioPlayer.pause();
+            currentAudioPlayer.currentTime = 0;
+        }
+        const audioUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(cleanText)}&type=${type}`;
+        currentAudioPlayer = new Audio(audioUrl);
+        currentAudioPlayer.playbackRate = speechRate || 1.0;
+        
+        const playPromise = currentAudioPlayer.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(() => {
+                // Nếu mạng bị chặn hoặc lỗi audio, fallback sang Web Speech API
+                speakWithWebSpeech(cleanText);
+            });
+        }
+    } catch (e) {
+        speakWithWebSpeech(cleanText);
+    }
+}
+
+function speakWithWebSpeech(text) {
+    if (!('speechSynthesis' in window)) return;
+    try {
         window.speechSynthesis.cancel();
-        // Một số trình duyệt (Chrome/Edge trên Windows) đôi khi cần resume nếu audio context/speechSynthesis bị pause ngầm
         if (window.speechSynthesis.paused) {
             window.speechSynthesis.resume();
         }
-        let utterance = new SpeechSynthesisUtterance(text);
+
+        const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = voiceAccent === 'UK' ? 'en-GB' : 'en-US';
         utterance.rate = speechRate || 0.9;
-        
-        // Luôn cập nhật giọng mới nhất theo voiceAccent hiện tại
-        if (!englishVoice || !englishVoice.lang.replace('_', '-').toLowerCase().startsWith(utterance.lang.toLowerCase())) {
-            let voices = window.speechSynthesis.getVoices();
-            const langCode = voiceAccent === 'UK' ? 'en-GB' : 'en-US';
-            englishVoice = voices.find(v => v.lang.replace('_', '-').toLowerCase().includes(langCode.toLowerCase()) && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('George') || v.name.includes('Jenny') || v.name.includes('Guy'))) || 
+
+        // Lưu biến toàn cục tránh lỗi Garbage Collection của Chromium trên HTTPS
+        window._activeUtterance = utterance;
+
+        let voices = window.speechSynthesis.getVoices();
+        const langCode = voiceAccent === 'UK' ? 'en-GB' : 'en-US';
+        const matchVoice = voices.find(v => v.lang.replace('_', '-').toLowerCase().includes(langCode.toLowerCase()) && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('George') || v.name.includes('Jenny') || v.name.includes('Guy'))) || 
                            voices.find(v => v.lang.replace('_', '-').toLowerCase().startsWith(langCode.toLowerCase())) || 
                            voices.find(v => v.lang.toLowerCase().startsWith('en'));
-        }
-        if (englishVoice) utterance.voice = englishVoice;
+        if (matchVoice) utterance.voice = matchVoice;
 
-        setTimeout(() => { 
-            window.speechSynthesis.speak(utterance); 
-        }, 50);
-    }
+        utterance.onend = () => { window._activeUtterance = null; };
+        utterance.onerror = () => { window._activeUtterance = null; };
+
+        window.speechSynthesis.speak(utterance);
+    } catch (e) {}
 }
 
 function getTodayString() {
@@ -528,6 +558,7 @@ function initDOM() {
         themeSwitch: document.getElementById('themeSwitch'),
         speechRateSelect: document.getElementById('speechRateSelect'),
         voiceAccentSelect: document.getElementById('voiceAccentSelect'),
+        testVoiceBtn: document.getElementById('testVoiceBtn'),
         sfxSwitch: document.getElementById('sfxSwitch'),
         viewTitle: document.getElementById('viewTitle'),
         viewSubtitle: document.getElementById('viewSubtitle'),
@@ -2048,6 +2079,13 @@ function setupEventListeners() {
                 currentCardIndex--; 
                 showCard(); 
             }
+        });
+    }
+
+    if (DOM.frontSpeakBtn) {
+        DOM.frontSpeakBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playWordSound();
         });
     }
 
