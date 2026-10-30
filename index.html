@@ -667,10 +667,15 @@
                             </span>
                             <small style="color: var(--text-muted);">Chọn chất giọng Anh - Mỹ (US) hoặc Anh - Anh (UK)</small>
                         </div>
-                        <select id="voiceAccentSelect" class="custom-select" style="width: auto; padding: 6px 14px;">
-                            <option value="US" selected>English (US) - Chuẩn Mỹ</option>
-                            <option value="UK">English (UK) - Chuẩn Anh</option>
-                        </select>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <select id="voiceAccentSelect" class="custom-select" style="width: auto; padding: 6px 14px;">
+                                <option value="US" selected>English (US) - Chuẩn Mỹ</option>
+                                <option value="UK">English (UK) - Chuẩn Anh</option>
+                            </select>
+                            <button id="testVoiceBtn" class="action-pill-btn" style="padding: 6px 12px; font-size: 0.85rem;" title="Bấm nghe thử giọng đọc ngay">
+                                <i class="fa-solid fa-play"></i> <span>Test giọng</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
@@ -788,21 +793,21 @@ experience | kinh nghiệm | /ɪkˈspɪriəns/ | She has five years of experienc
         </div>
     </div>
 
-    <!-- Nạp dữ liệu 13 nhóm -->
-    <script src="group_1.js"></script>
-    <script src="group_2.js"></script>
-    <script src="group_3.js"></script>
-    <script src="group_4.js"></script>
-    <script src="group_5.js"></script>
-    <script src="group_6.js"></script>
-    <script src="group_7.js"></script>
-    <script src="group_8.js"></script>
-    <script src="group_9.js"></script>
-    <script src="group_10.js"></script>
-    <script src="group_11.js"></script>
-    <script src="group_12.js"></script>
-    <script src="group_13.js"></script>
+    <!-- Nạp dữ liệu 13 nhóm từ thư mục data (?v= để chống cache cũ) -->
+    <script src="data/group_1.js?v24"></script>
+    <script src="data/group_2.js?v24"></script>
+    <script src="data/group_3.js?v24"></script>
+    <script src="data/group_4.js?v24"></script>
+    <script src="data/group_5.js?v24"></script>
+    <script src="data/group_6.js?v24"></script>
+    <script src="data/group_7.js?v24"></script>
+    <script src="data/group_8.js?v24"></script>
+    <script src="data/group_9.js?v24"></script>
+    <script src="data/group_10.js?v24"></script>
+    <script src="data/group_11.js?v24"></script>
+    <script src="data/group_12.js?v24"></script>
+    <script src="data/group_13.js?v24"></script>
     
-    <script src="app.js"></script>
+    <script src="app.js?v24"></script>
 </body>
 </html>

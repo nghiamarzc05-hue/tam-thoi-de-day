@@ -305,9 +305,9 @@ function initVoices() {
     const findVoice = () => {
         let voices = window.speechSynthesis.getVoices();
         const langCode = voiceAccent === 'UK' ? 'en-GB' : 'en-US';
-        englishVoice = voices.find(v => v.lang.includes(langCode) && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('George'))) || 
-                       voices.find(v => v.lang.startsWith(langCode)) || 
-                       voices.find(v => v.lang.startsWith('en'));
+        englishVoice = voices.find(v => v.lang.replace('_', '-').toLowerCase().includes(langCode.toLowerCase()) && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('George') || v.name.includes('Jenny') || v.name.includes('Guy'))) || 
+                       voices.find(v => v.lang.replace('_', '-').toLowerCase().startsWith(langCode.toLowerCase())) || 
+                       voices.find(v => v.lang.toLowerCase().startsWith('en'));
     };
     findVoice();
     window.speechSynthesis.onvoiceschanged = findVoice;
@@ -319,11 +319,27 @@ function playWordSound(wordText) {
 
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
+        // Một số trình duyệt (Chrome/Edge trên Windows) đôi khi cần resume nếu audio context/speechSynthesis bị pause ngầm
+        if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+        }
         let utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = voiceAccent === 'UK' ? 'en-GB' : 'en-US';
-        utterance.rate = speechRate;
+        utterance.rate = speechRate || 0.9;
+        
+        // Luôn cập nhật giọng mới nhất theo voiceAccent hiện tại
+        if (!englishVoice || !englishVoice.lang.replace('_', '-').toLowerCase().startsWith(utterance.lang.toLowerCase())) {
+            let voices = window.speechSynthesis.getVoices();
+            const langCode = voiceAccent === 'UK' ? 'en-GB' : 'en-US';
+            englishVoice = voices.find(v => v.lang.replace('_', '-').toLowerCase().includes(langCode.toLowerCase()) && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('George') || v.name.includes('Jenny') || v.name.includes('Guy'))) || 
+                           voices.find(v => v.lang.replace('_', '-').toLowerCase().startsWith(langCode.toLowerCase())) || 
+                           voices.find(v => v.lang.toLowerCase().startsWith('en'));
+        }
         if (englishVoice) utterance.voice = englishVoice;
-        setTimeout(() => { window.speechSynthesis.speak(utterance); }, 40);
+
+        setTimeout(() => { 
+            window.speechSynthesis.speak(utterance); 
+        }, 50);
     }
 }
 
@@ -408,8 +424,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Tự động nạp bổ sung các nhóm còn thiếu (thử cả thư mục data/ lẫn thư mục gốc)
+function loadScriptOnce(src) {
+    return new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = () => resolve(true);
+        s.onerror = () => { s.remove(); resolve(false); };
+        document.body.appendChild(s);
+    });
+}
+
+async function ensureAllGroupsLoaded() {
+    const v = 'v24';
+    let loadedAny = false;
+    for (let i = 1; i <= 20; i++) {
+        const varName = `group_${i}_decks`;
+        if (Array.isArray(window[varName])) continue;
+        const ok = await loadScriptOnce(`data/group_${i}.js?${v}`) || await loadScriptOnce(`group_${i}.js?${v}`);
+        if (ok && Array.isArray(window[varName])) loadedAny = true;
+        else if (i > 13) break;
+    }
+    if (loadedAny) {
+        mergeData();
+        populateQuizDecks();
+        renderDeckList(allDecks, DOM.deckList);
+        updateDashboardStats();
+        updateSrsDashboardCounter();
+        if (allDecks.length > 0 && (!currentDeck || !currentDeck.items)) {
+            currentDeck = allDecks[0];
+            currentStudyFilter = 'all';
+            applyStudyFilter(currentStudyFilter);
+        }
+    }
+}
+
 // Hỗ trợ trường hợp nếu file group_*.js được trình duyệt tải hoàn tất sau DOMContentLoaded
 window.addEventListener('load', () => {
+    ensureAllGroupsLoaded();
     if (allDecks.length === 0) {
         mergeData();
         populateQuizDecks();
@@ -625,7 +677,8 @@ function initDOM() {
         quizFinalScore: document.getElementById('quizFinalScore'),
         quizScoreFeedback: document.getElementById('quizScoreFeedback'),
         retryQuizBtn: document.getElementById('retryQuizBtn'),
-        backToDeckQuizBtn: document.getElementById('backToDeckQuizBtn')
+        backToDeckQuizBtn: document.getElementById('backToDeckQuizBtn'),
+        testVoiceBtn: document.getElementById('testVoiceBtn')
     };
 
     if (DOM.speechRateSelect) DOM.speechRateSelect.value = String(speechRate);
@@ -2066,6 +2119,22 @@ function setupEventListeners() {
             voiceAccent = e.target.value || 'US';
             localStorage.setItem('voiceAccent', voiceAccent);
             initVoices();
+            // Tự động đọc câu mẫu test khi đổi giọng
+            const sampleText = voiceAccent === 'UK' 
+                ? "Hello! This is British English pronunciation." 
+                : "Hello! This is American English pronunciation.";
+            playWordSound(sampleText);
+        });
+    }
+
+    if (DOM.testVoiceBtn) {
+        DOM.testVoiceBtn.addEventListener('click', () => {
+            const currentItem = (currentDeckItems && currentDeckItems[currentCardIndex]) ? currentDeckItems[currentCardIndex] : null;
+            const word = currentItem ? currentItem.term : 'Welcome to Flashcards Pro';
+            const sample = voiceAccent === 'UK' 
+                ? `${word}. Lovely British accent.` 
+                : `${word}. Natural American accent.`;
+            playWordSound(sample);
         });
     }
 
@@ -2919,8 +2988,18 @@ function evaluateSpeechPronunciation(spokenText, targetWord, targetIpa, accent =
     // 1. Tiêu chí 1: Độ chuẩn xác từ vựng (Word Accuracy - Levenshtein Text Similarity) - Trọng số 40%
     const charSim = calculateLevenshteinSimilarity(spoken, target);
     let accuracyScore = charSim;
-    if (spoken === target) accuracyScore = 100;
-    else if (spoken.includes(target) || target.includes(spoken)) accuracyScore = Math.min(charSim + 15, 90);
+    if (spoken === target) {
+        accuracyScore = 100;
+    } else {
+        // Tách các từ đơn lẻ nếu đọc theo cụm hoặc câu
+        const spokenTokens = spoken.split(/\s+/);
+        const targetTokens = target.split(/\s+/);
+        if (targetTokens.every(tok => spoken.includes(tok)) || spokenTokens.every(tok => target.includes(tok))) {
+            accuracyScore = Math.max(accuracyScore, 95);
+        } else if (spoken.includes(target) || target.includes(spoken)) {
+            accuracyScore = Math.max(accuracyScore, 90);
+        }
+    }
 
     // 2. Tiêu chí 2: Độ chính xác ngữ âm (Phonetic Sound Match) - Trọng số 25%
     const spokenPhone = getPhoneticCode(spoken);
@@ -2928,7 +3007,6 @@ function evaluateSpeechPronunciation(spokenText, targetWord, targetIpa, accent =
     const phoneticSim = calculateLevenshteinSimilarity(spokenPhone, targetPhone);
 
     // 3. Tiêu chí 3: Âm đuôi / Bật hơi âm cuối (Ending Sounds: s, z, t, d, k, p, θ, ed) - Trọng số 20%
-    // Người Việt hay nuốt âm cuối, đây là tiêu chí siết rất chặt
     let endingSoundScore = 100;
     const criticalEndings = ['s', 'z', 't', 'd', 'k', 'p', 'ed', 'ts', 'ks', 'ce', 'se'];
     const hasEnding = criticalEndings.some(end => target.endsWith(end));
@@ -2942,59 +3020,58 @@ function evaluateSpeechPronunciation(spokenText, targetWord, targetIpa, accent =
         if (lastCharSpoken === lastCharTarget || lastSpoken === lastTarget) {
             endingSoundScore = 100;
         } else if (lastCharTarget === 's' && !spoken.endsWith('s') && !spoken.endsWith('z')) {
-            endingSoundScore = 30; // Quên âm đuôi s/z
+            endingSoundScore = 60; // Tránh trừ quá gắt gây nản lòng
         } else if ((lastCharTarget === 't' || lastCharTarget === 'd') && !spoken.endsWith('t') && !spoken.endsWith('d')) {
-            endingSoundScore = 40; // Nuốt âm bật hơi t/d
+            endingSoundScore = 65;
         } else {
-            endingSoundScore = 50;
+            endingSoundScore = 75;
         }
     }
 
     // 4. Tiêu chí 4: Accent & Nhấn nhá trọng âm (Accent / Stress Intonation) - Trọng số 15%
-    let accentScore = 85;
-    let stressScore = 80;
+    let accentScore = 88;
+    let stressScore = 85;
     const stressInfo = analyzeWordStress(target, targetIpa);
 
-    // Kiểm tra độ dài từ phát âm so với từ gốc để nhận diện nuốt âm / đọc quá vội
+    // Kiểm tra độ dài từ phát âm so với từ gốc
     const lenRatio = spoken.length / Math.max(1, target.length);
-    if (lenRatio < 0.75) {
-        stressScore -= 25; // Đọc quá cộc lốc hoặc nuốt âm tiết
-    } else if (lenRatio > 1.35) {
-        stressScore -= 15; // Đọc rườm rà hoặc kéo dài âm
+    if (lenRatio < 0.6) {
+        stressScore -= 15;
+    } else if (lenRatio > 1.5) {
+        stressScore -= 10;
     }
 
-    // Phân biệt Accent UK (RP) vs US (General American)
-    // Ví dụ âm /r/ cuối, âm /t/ flapped, nguyên âm rộng
+    // Phân biệt Accent UK vs US
     if (accent === 'UK') {
-        if (target.endsWith('r') && !spoken.endsWith('r')) accentScore = 95; // UK r-dropping
+        if (target.endsWith('r') && !spoken.endsWith('r')) accentScore = 95;
         else accentScore = 90;
     } else {
-        // US rhotic r
         if (target.includes('r') && spoken.includes('r')) accentScore = 95;
         else accentScore = 88;
     }
 
-    // TỔNG HỢP ĐIỂM THEO TRỌNG SỐ NGHIÊM NGẶT
-    // Total = (Accuracy * 0.35) + (Phonetic * 0.30) + (EndingSound * 0.20) + (Stress & Accent * 0.15)
+    // TỔNG HỢP ĐIỂM
     let totalScore = Math.round(
-        (accuracyScore * 0.35) +
-        (phoneticSim * 0.30) +
+        (accuracyScore * 0.40) +
+        (phoneticSim * 0.25) +
         (endingSoundScore * 0.20) +
         (((stressScore + accentScore) / 2) * 0.15)
     );
 
-    // Nếu từ đọc hoàn toàn lệch âm -> giới hạn điểm tối đa
-    if (charSim < 55) {
-        totalScore = Math.min(totalScore, 45);
+    // Nếu các từ trùng khớp hoàn toàn, bảo đảm ít nhất 90-100 điểm
+    if (spoken === target) {
+        totalScore = Math.max(totalScore, 92);
+    } else if (accuracyScore >= 85) {
+        totalScore = Math.max(totalScore, 80);
     }
 
-    // Tạo các nhận xét chi tiết (Detailed Feedback)
+    // Tạo các nhận xét chi tiết
     const feedback = [];
     if (hasEnding && endingSoundScore < 70) {
-        feedback.push(`⚠️ <strong>Thiếu âm đuôi (Ending Sound):</strong> Hãy chú ý bật rõ âm kết thúc "<em>-${target.slice(-2)}</em>".`);
+        feedback.push(`⚠️ <strong>Gợi ý âm đuôi:</strong> Chú ý bật nhẹ âm kết thúc "<em>-${target.slice(-2)}</em>".`);
     }
     if (stressInfo.totalSyllables > 1) {
-        feedback.push(`🎯 <strong>Nhấn trọng âm:</strong> Nhấn mạnh vào <strong>âm tiết ${stressInfo.stressIndex}</strong> ${targetIpa ? `(nhìn dấu ' trong <code>${targetIpa}</code>)` : ''}.`);
+        feedback.push(`🎯 <strong>Trọng âm:</strong> Nhấn vào <strong>âm tiết ${stressInfo.stressIndex}</strong> ${targetIpa ? `[<code>${targetIpa}</code>]` : ''}.`);
     }
     if (accent === 'UK') {
         feedback.push(`🇬🇧 <strong>Giọng Anh - Anh (UK):</strong> Phát âm tròn vành rõ chữ, không uốn cong lưỡi ở âm /r/ cuối.`);
