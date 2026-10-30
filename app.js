@@ -1545,6 +1545,11 @@ function showCard() {
         if (DOM.cardExampleEn) DOM.cardExampleEn.innerText = item.example || 'No example available'; 
         if (DOM.cardExampleVi) DOM.cardExampleVi.innerText = item.example_vi || '';
         
+        // Ẩn bảng kết quả nói của thẻ trước nếu đang hiển thị
+        if (DOM.speechEvalBox) {
+            DOM.speechEvalBox.style.display = 'none';
+        }
+
         updateCardStatusUI();
     }, 150);
 }
@@ -3253,6 +3258,7 @@ function setupSpeechRecognition() {
             }
         }
 
+        let hasReceivedResult = false;
         try {
             // Luôn tạo mới instance để tránh lỗi 'recognition has already started'
             if (speechRecognitionInstance) {
@@ -3280,16 +3286,22 @@ function setupSpeechRecognition() {
             };
 
             speechRecognitionInstance.onresult = (event) => {
+                hasReceivedResult = true;
                 isListeningSpeech = false;
                 if (DOM.cardMicBtn) DOM.cardMicBtn.classList.remove('listening');
                 if (DOM.studyMicBtn) DOM.studyMicBtn.classList.remove('listening');
 
                 // Lấy tất cả các kết quả nhận diện tiềm năng từ microphone
                 let candidates = [];
-                if (event.results && event.results[0]) {
-                    for (let i = 0; i < event.results[0].length; i++) {
-                        if (event.results[0][i] && event.results[0][i].transcript) {
-                            candidates.push(event.results[0][i].transcript);
+                if (event.results) {
+                    for (let r = 0; r < event.results.length; r++) {
+                        const item = event.results[r];
+                        if (item) {
+                            for (let i = 0; i < item.length; i++) {
+                                if (item[i] && item[i].transcript) {
+                                    candidates.push(item[i].transcript.trim());
+                                }
+                            }
                         }
                     }
                 }
@@ -3298,6 +3310,13 @@ function setupSpeechRecognition() {
                 const currentItem = (currentDeckItems && currentDeckItems[currentCardIndex]) ? currentDeckItems[currentCardIndex] : null;
                 const target = currentItem ? currentItem.term : '';
                 const ipa = currentItem ? (currentItem.ipa || '') : '';
+
+                if (!spoken) {
+                    if (DOM.speechEvalStatus) {
+                        DOM.speechEvalStatus.innerHTML = `<span style="color:var(--warning); font-size:0.88rem;"><i class="fa-solid fa-triangle-exclamation"></i> Âm thanh quá nhỏ hoặc chưa rõ tiếng. Bạn hãy nói to hơn nhé!</span>`;
+                    }
+                    return;
+                }
 
                 // So sánh với tất cả các ứng viên nhận diện để chọn kết quả chấm công bằng nhất
                 let bestResult = evaluateSpeechPronunciation(spoken, target, ipa, voiceAccent);
@@ -3375,7 +3394,7 @@ function setupSpeechRecognition() {
                 if (e.error === 'not-allowed') {
                     errText = "⚠️ Trình duyệt chưa được cấp quyền dùng Microphone. Hãy bấm vào biểu tượng ổ khóa / icon Micro trên thanh URL của trình duyệt và chọn Cho phép (Allow)!";
                 } else if (e.error === 'no-speech') {
-                    errText = "Không nghe thấy âm thanh. Bạn hãy nói to hơn hoặc kiểm tra cắm mic nhé!";
+                    errText = "Không nghe thấy âm thanh. Bạn hãy nói to hơn hoặc thử bấm đọc lại nhé!";
                 } else if (e.error === 'network') {
                     errText = "Tính năng nhận diện giọng nói cần kết nối Internet để phân tích ngữ âm chính xác.";
                 }
@@ -3389,6 +3408,11 @@ function setupSpeechRecognition() {
                 isListeningSpeech = false;
                 if (DOM.cardMicBtn) DOM.cardMicBtn.classList.remove('listening');
                 if (DOM.studyMicBtn) DOM.studyMicBtn.classList.remove('listening');
+
+                // Nếu dừng mà chưa có kết quả và chưa báo lỗi -> báo cho người dùng
+                if (!hasReceivedResult && DOM.speechEvalStatus && !DOM.speechEvalStatus.innerHTML.includes('circle-exclamation') && !DOM.speechEvalStatus.innerHTML.includes('ĐIỂM')) {
+                    DOM.speechEvalStatus.innerHTML = `<span style="color:var(--warning); font-size:0.85rem;"><i class="fa-solid fa-microphone-slash"></i> Đã kết thúc nghe. Nếu chưa hiện điểm, hãy bấm nút Micro và đọc to, rõ lại nhé!</span>`;
+                }
             };
 
             speechRecognitionInstance.start();
