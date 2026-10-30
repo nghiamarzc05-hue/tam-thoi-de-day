@@ -1549,6 +1549,12 @@ function showCard() {
         if (DOM.speechEvalBox) {
             DOM.speechEvalBox.style.display = 'none';
         }
+        if (typeof isListeningSpeech !== 'undefined' && isListeningSpeech && speechRecognitionInstance) {
+            try { speechRecognitionInstance.stop(); } catch(e) {}
+            isListeningSpeech = false;
+            if (DOM.cardMicBtn) DOM.cardMicBtn.classList.remove('listening');
+            if (DOM.studyMicBtn) DOM.studyMicBtn.classList.remove('listening');
+        }
 
         updateCardStatusUI();
     }, 150);
@@ -3211,29 +3217,119 @@ function setupSpeechRecognition() {
         return;
     }
 
-    // Khởi tạo đối tượng SpeechRecognition mới khi nhấn để tránh bị stale/dead state
-    const createRecognitionInstance = () => {
-        const rec = new SpeechRecognition();
-        rec.continuous = false;
-        rec.interimResults = false;
-        rec.maxAlternatives = 3;
-        rec.lang = voiceAccent === 'UK' ? 'en-GB' : 'en-US';
-        return rec;
+    let silenceTimer = null;
+    let safetyTimeout = null;
+    let accumulatedTranscript = '';
+    let recognizedCandidates = [];
+    let isEvaluating = false;
+
+    const clearTimers = () => {
+        if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+        if (safetyTimeout) { clearTimeout(safetyTimeout); safetyTimeout = null; }
     };
 
-    const stopMic = () => {
+    const stopMicUI = () => {
         isListeningSpeech = false;
-        if (speechRecognitionInstance) {
-            try { speechRecognitionInstance.stop(); } catch (e) {}
-            try { speechRecognitionInstance.abort(); } catch (e) {}
-        }
         if (DOM.cardMicBtn) DOM.cardMicBtn.classList.remove('listening');
         if (DOM.studyMicBtn) DOM.studyMicBtn.classList.remove('listening');
     };
 
-    const startMic = async () => {
+    const finishAndScore = () => {
+        if (isEvaluating) return;
+        isEvaluating = true;
+        clearTimers();
+        stopMicUI();
+
+        if (speechRecognitionInstance) {
+            try { speechRecognitionInstance.stop(); } catch (e) {}
+        }
+
+        const currentItem = (currentDeckItems && currentDeckItems[currentCardIndex]) ? currentDeckItems[currentCardIndex] : null;
+        const target = currentItem ? currentItem.term : '';
+        const ipa = currentItem ? (currentItem.ipa || '') : '';
+
+        const spoken = (accumulatedTranscript || (recognizedCandidates[0] || '')).trim();
+
+        if (!spoken) {
+            if (DOM.speechEvalStatus) {
+                DOM.speechEvalStatus.innerHTML = `<span style="color:var(--warning); font-size:0.88rem;"><i class="fa-solid fa-triangle-exclamation"></i> Chưa nghe rõ giọng nói. Bạn hãy nói to hơn hoặc để gần micro hơn nhé!</span>`;
+            }
+            if (DOM.speechEvalResult) {
+                DOM.speechEvalResult.innerHTML = `<div style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding:4px;"><i class="fa-solid fa-rotate-right"></i> Nhấn vào nút Micro để thử lại</div>`;
+            }
+            return;
+        }
+
+        // Chọn kết quả phù hợp nhất trong các candidates nhận diện
+        let bestResult = evaluateSpeechPronunciation(spoken, target, ipa, voiceAccent);
+        let bestSpoken = spoken;
+        for (let k = 0; k < recognizedCandidates.length; k++) {
+            const cand = recognizedCandidates[k];
+            if (!cand) continue;
+            const res = evaluateSpeechPronunciation(cand, target, ipa, voiceAccent);
+            if (res.totalScore > bestResult.totalScore) {
+                bestResult = res;
+                bestSpoken = cand;
+            }
+        }
+
+        const result = bestResult;
+        const score = result.totalScore;
+
+        let scoreBadge = '';
+        let feedbackTitle = '';
+
+        if (score >= 85) {
+            AudioFX.playCorrect();
+            noiLua();
+            scoreBadge = `<span style="background:var(--success); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem; box-shadow:0 2px 8px rgba(16,185,129,0.3);"><i class="fa-solid fa-crown"></i> ${score}/100 ĐIỂM</span>`;
+            feedbackTitle = `<span class="speech-match-good"><i class="fa-solid fa-circle-check"></i> Xuất sắc! Phát âm chuẩn bản xứ (Native Level)!</span>`;
+            if (typeof confetti !== 'undefined') confetti({ particleCount: 90, spread: 70 });
+        } else if (score >= 65) {
+            AudioFX.playPop();
+            scoreBadge = `<span style="background:var(--warning); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem;"><i class="fa-solid fa-thumbs-up"></i> ${score}/100 ĐIỂM</span>`;
+            feedbackTitle = `<span style="color:var(--warning); font-weight:700;"><i class="fa-solid fa-circle-exclamation"></i> Khá tốt! Cần chú ý thêm âm đuôi hoặc trọng âm!</span>`;
+        } else {
+            AudioFX.playWrong();
+            scoreBadge = `<span style="background:var(--danger); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem;"><i class="fa-solid fa-circle-xmark"></i> ${score}/100 ĐIỂM</span>`;
+            feedbackTitle = `<span class="speech-match-bad"><i class="fa-solid fa-triangle-exclamation"></i> Chưa chuẩn! Hãy nghe mẫu và thử phát âm lại nhé!</span>`;
+        }
+
+        if (DOM.speechEvalStatus) {
+            DOM.speechEvalStatus.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    ${feedbackTitle} ${scoreBadge}
+                </div>
+            `;
+        }
+
+        if (DOM.speechEvalResult) {
+            const feedbackItems = result.feedback.map(f => `<div style="margin-top:3px;">${f}</div>`).join('');
+            DOM.speechEvalResult.innerHTML = `
+                <div style="font-size:0.86rem; line-height:1.45; color:var(--text-main); background:var(--bg-main); padding:10px 12px; border-radius:10px; border:1px solid var(--border-color); text-align:left;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+                        <div>Bạn đọc: "<strong style="color:var(--text-main);">${bestSpoken}</strong>"</div>
+                        <div>Mục tiêu: "<strong style="color:var(--primary);">${target}</strong>" <span style="font-size:0.8rem; color:var(--text-muted);">${ipa ? `[${ipa}]` : ''}</span></div>
+                    </div>
+                    <!-- Chi tiết 4 thanh chỉ số năng lực -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.75rem; margin-bottom:6px;">
+                        <div>Đúng từ ngữ: <strong>${result.accuracyScore}%</strong></div>
+                        <div>Khớp ngữ âm: <strong>${result.phoneticSim}%</strong></div>
+                        <div>Bật âm đuôi: <strong>${result.endingSoundScore}%</strong></div>
+                        <div>Accent & Trọng âm: <strong>${result.stressScore}%</strong></div>
+                    </div>
+                    <div style="font-size:0.8rem; color:var(--text-muted); border-top:1px dashed var(--border-color); padding-top:6px; margin-top:4px;">
+                        ${feedbackItems}
+                    </div>
+                </div>
+            `;
+        }
+    };
+
+    const startMic = () => {
+        // Nếu người dùng bấm lại nút Micro trong khi đang nghe -> Dừng và chấm điểm ngay lập tức!
         if (isListeningSpeech) {
-            stopMic();
+            finishAndScore();
             return;
         }
 
@@ -3244,27 +3340,22 @@ function setupSpeechRecognition() {
             return;
         }
 
-        // Kiểm tra quyền Micro trước (nếu chạy qua http/https)
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            try {
-                // Yêu cầu quyền truy cập micro rõ ràng
-                await navigator.mediaDevices.getUserMedia({ audio: true });
-            } catch (permErr) {
-                console.warn("[Speech] Lỗi cấp quyền Micro:", permErr);
-                if (permErr.name === 'NotAllowedError' || permErr.name === 'PermissionDeniedError') {
-                    showMicNotice("⚠️ Bạn đã chặn quyền Micro. Hãy nhấp vào biểu tượng ổ khóa / chiếc micro trên thanh địa chỉ trình duyệt để cấp quyền Cho phép (Allow)!", true);
-                    return;
-                }
-            }
-        }
+        // Reset trạng thái
+        clearTimers();
+        accumulatedTranscript = '';
+        recognizedCandidates = [];
+        isEvaluating = false;
 
-        let hasReceivedResult = false;
         try {
-            // Luôn tạo mới instance để tránh lỗi 'recognition has already started'
             if (speechRecognitionInstance) {
                 try { speechRecognitionInstance.abort(); } catch (e) {}
             }
-            speechRecognitionInstance = createRecognitionInstance();
+
+            speechRecognitionInstance = new SpeechRecognition();
+            speechRecognitionInstance.continuous = false;
+            speechRecognitionInstance.interimResults = true; // Nhận diện real-time ngay khi phát âm
+            speechRecognitionInstance.maxAlternatives = 3;
+            speechRecognitionInstance.lang = voiceAccent === 'UK' ? 'en-GB' : 'en-US';
 
             speechRecognitionInstance.onstart = () => {
                 isListeningSpeech = true;
@@ -3281,146 +3372,98 @@ function setupSpeechRecognition() {
                             </span>
                         </div>
                     `;
-                    DOM.speechEvalResult.innerHTML = `<span style="font-size:0.8rem; color:var(--text-muted);"><i class="fa-solid fa-microphone-lines"></i> Hãy nói to và rõ ràng vào micro ngay bây giờ...</span>`;
+                    DOM.speechEvalResult.innerHTML = `<span style="font-size:0.8rem; color:var(--text-muted);"><i class="fa-solid fa-microphone-lines"></i> Hãy nói to và rõ ràng vào micro... (hoặc bấm lại micro khi nói xong)</span>`;
                 }
+
+                // Safety watchdog: Tự động kết thúc sau 7 giây nếu không có tín hiệu
+                safetyTimeout = setTimeout(() => {
+                    if (isListeningSpeech) {
+                        finishAndScore();
+                    }
+                }, 7000);
             };
 
             speechRecognitionInstance.onresult = (event) => {
-                hasReceivedResult = true;
-                isListeningSpeech = false;
-                if (DOM.cardMicBtn) DOM.cardMicBtn.classList.remove('listening');
-                if (DOM.studyMicBtn) DOM.studyMicBtn.classList.remove('listening');
+                if (isEvaluating) return;
 
-                // Lấy tất cả các kết quả nhận diện tiềm năng từ microphone
-                let candidates = [];
+                let interim = '';
                 if (event.results) {
-                    for (let r = 0; r < event.results.length; r++) {
-                        const item = event.results[r];
-                        if (item) {
-                            for (let i = 0; i < item.length; i++) {
-                                if (item[i] && item[i].transcript) {
-                                    candidates.push(item[i].transcript.trim());
-                                }
+                    for (let i = 0; i < event.results.length; i++) {
+                        const res = event.results[i];
+                        if (res.isFinal) {
+                            accumulatedTranscript = res[0].transcript;
+                        } else {
+                            interim += res[0].transcript;
+                        }
+                        for (let j = 0; j < res.length; j++) {
+                            const t = res[j].transcript ? res[j].transcript.trim() : '';
+                            if (t && !recognizedCandidates.includes(t)) {
+                                recognizedCandidates.push(t);
                             }
                         }
                     }
                 }
-                let spoken = candidates[0] || '';
 
-                const currentItem = (currentDeckItems && currentDeckItems[currentCardIndex]) ? currentDeckItems[currentCardIndex] : null;
-                const target = currentItem ? currentItem.term : '';
-                const ipa = currentItem ? (currentItem.ipa || '') : '';
+                const currentText = (accumulatedTranscript || interim || '').trim();
+                if (currentText) {
+                    if (!accumulatedTranscript) accumulatedTranscript = currentText;
 
-                if (!spoken) {
-                    if (DOM.speechEvalStatus) {
-                        DOM.speechEvalStatus.innerHTML = `<span style="color:var(--warning); font-size:0.88rem;"><i class="fa-solid fa-triangle-exclamation"></i> Âm thanh quá nhỏ hoặc chưa rõ tiếng. Bạn hãy nói to hơn nhé!</span>`;
+                    // Hiển thị trực tiếp phản hồi thị giác những gì đang nghe
+                    if (DOM.speechEvalResult) {
+                        DOM.speechEvalResult.innerHTML = `
+                            <span style="color:var(--primary); font-weight:700; font-size:0.88rem;">
+                                <i class="fa-solid fa-microphone-lines speech-pulse"></i> Đang nghe: "<em>${currentText}</em>"...
+                            </span>
+                        `;
                     }
-                    return;
-                }
 
-                // So sánh với tất cả các ứng viên nhận diện để chọn kết quả chấm công bằng nhất
-                let bestResult = evaluateSpeechPronunciation(spoken, target, ipa, voiceAccent);
-                for (let k = 1; k < candidates.length; k++) {
-                    const res = evaluateSpeechPronunciation(candidates[k], target, ipa, voiceAccent);
-                    if (res.totalScore > bestResult.totalScore) {
-                        bestResult = res;
-                        spoken = candidates[k];
-                    }
-                }
-
-                const result = bestResult;
-                const score = result.totalScore;
-
-                let scoreBadge = '';
-                let feedbackTitle = '';
-
-                if (score >= 85) {
-                    // Chuẩn bản xứ xuất sắc (85 - 100 điểm)
-                    AudioFX.playCorrect();
-                    noiLua();
-                    scoreBadge = `<span style="background:var(--success); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem; box-shadow:0 2px 8px rgba(16,185,129,0.3);"><i class="fa-solid fa-crown"></i> ${score}/100 ĐIỂM</span>`;
-                    feedbackTitle = `<span class="speech-match-good"><i class="fa-solid fa-circle-check"></i> Phát âm chuẩn xác đỉnh cao (Native Level)!</span>`;
-                    if (typeof confetti !== 'undefined') confetti({ particleCount: 90, spread: 70 });
-                } else if (score >= 65) {
-                    // Khá tốt (65 - 84 điểm)
-                    AudioFX.playPop();
-                    scoreBadge = `<span style="background:var(--warning); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem;"><i class="fa-solid fa-thumbs-up"></i> ${score}/100 ĐIỂM</span>`;
-                    feedbackTitle = `<span style="color:var(--warning); font-weight:700;"><i class="fa-solid fa-circle-exclamation"></i> Khá tốt, còn lỗi nhẹ âm đuôi hoặc nhấn trọng âm!</span>`;
-                } else {
-                    // Cần luyện tập thêm (< 65 điểm)
-                    AudioFX.playWrong();
-                    scoreBadge = `<span style="background:var(--danger); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem;"><i class="fa-solid fa-circle-xmark"></i> ${score}/100 ĐIỂM</span>`;
-                    feedbackTitle = `<span class="speech-match-bad"><i class="fa-solid fa-triangle-exclamation"></i> Chưa đạt chuẩn! Hãy nghe mẫu và đọc lại nhé!</span>`;
-                }
-
-                if (DOM.speechEvalStatus) {
-                    DOM.speechEvalStatus.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                            ${feedbackTitle} ${scoreBadge}
-                        </div>
-                    `;
-                }
-
-                if (DOM.speechEvalResult) {
-                    const feedbackItems = result.feedback.map(f => `<div style="margin-top:3px;">${f}</div>`).join('');
-                    DOM.speechEvalResult.innerHTML = `
-                        <div style="font-size:0.86rem; line-height:1.45; color:var(--text-main); background:var(--bg-main); padding:10px 12px; border-radius:10px; border:1px solid var(--border-color);">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:6px; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
-                                <div>Bạn đọc: "<strong style="color:var(--text-main);">${spoken}</strong>"</div>
-                                <div>Chuẩn: "<strong style="color:var(--primary);">${target}</strong>" <span style="font-size:0.8rem; color:var(--text-muted);">${ipa ? `[${ipa}]` : ''}</span></div>
-                            </div>
-                            <!-- Chi tiết 4 thanh chỉ số năng lực -->
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.75rem; margin-bottom:6px;">
-                                <div>Đúng từ ngữ: <strong>${result.accuracyScore}%</strong></div>
-                                <div>Khớp ngữ âm: <strong>${result.phoneticSim}%</strong></div>
-                                <div>Bật âm đuôi: <strong>${result.endingSoundScore}%</strong></div>
-                                <div>Accent & Nhấn: <strong>${result.stressScore}%</strong></div>
-                            </div>
-                            <div style="font-size:0.8rem; color:var(--text-muted); border-top:1px dashed var(--border-color); pt:6px; margin-top:4px;">
-                                ${feedbackItems}
-                            </div>
-                        </div>
-                    `;
+                    // Tự động kết thúc và chấm điểm sau 1.2s im lặng
+                    if (silenceTimer) clearTimeout(silenceTimer);
+                    silenceTimer = setTimeout(() => {
+                        finishAndScore();
+                    }, 1200);
                 }
             };
 
             speechRecognitionInstance.onerror = (e) => {
-                isListeningSpeech = false;
-                if (DOM.cardMicBtn) DOM.cardMicBtn.classList.remove('listening');
-                if (DOM.studyMicBtn) DOM.studyMicBtn.classList.remove('listening');
-
                 console.warn("[Speech] Error event:", e.error);
+                clearTimers();
+                stopMicUI();
+
+                // Nếu trước khi ngắt đã nhận được âm thanh -> vẫn chấm điểm bình thường!
+                if (accumulatedTranscript || recognizedCandidates.length > 0) {
+                    finishAndScore();
+                    return;
+                }
+
                 let errText = "Không thu được giọng nói.";
-                if (e.error === 'not-allowed') {
-                    errText = "⚠️ Trình duyệt chưa được cấp quyền dùng Microphone. Hãy bấm vào biểu tượng ổ khóa / icon Micro trên thanh URL của trình duyệt và chọn Cho phép (Allow)!";
+                if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                    errText = "⚠️ Chưa được cấp quyền Microphone. Hãy bấm biểu tượng 🔒 hoặc 🎙 trên thanh địa chỉ URL để chọn Cho phép (Allow)!";
                 } else if (e.error === 'no-speech') {
-                    errText = "Không nghe thấy âm thanh. Bạn hãy nói to hơn hoặc thử bấm đọc lại nhé!";
+                    errText = "Không nghe thấy âm thanh. Bạn hãy nói to hơn hoặc đưa Micro gần hơn nhé!";
                 } else if (e.error === 'network') {
-                    errText = "Tính năng nhận diện giọng nói cần kết nối Internet để phân tích ngữ âm chính xác.";
+                    errText = "Nhận diện giọng nói cần kết nối Internet để phân tích ngữ âm chính xác.";
                 }
 
                 if (DOM.speechEvalStatus) {
                     DOM.speechEvalStatus.innerHTML = `<span style="color:var(--danger); font-size:0.85rem;"><i class="fa-solid fa-circle-exclamation"></i> ${errText}</span>`;
                 }
+                if (DOM.speechEvalResult) {
+                    DOM.speechEvalResult.innerHTML = `<div style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding:4px;"><i class="fa-solid fa-rotate-right"></i> Bấm Micro để thử lại</div>`;
+                }
             };
 
             speechRecognitionInstance.onend = () => {
-                isListeningSpeech = false;
-                if (DOM.cardMicBtn) DOM.cardMicBtn.classList.remove('listening');
-                if (DOM.studyMicBtn) DOM.studyMicBtn.classList.remove('listening');
-
-                // Nếu dừng mà chưa có kết quả và chưa báo lỗi -> báo cho người dùng
-                if (!hasReceivedResult && DOM.speechEvalStatus && !DOM.speechEvalStatus.innerHTML.includes('circle-exclamation') && !DOM.speechEvalStatus.innerHTML.includes('ĐIỂM')) {
-                    DOM.speechEvalStatus.innerHTML = `<span style="color:var(--warning); font-size:0.85rem;"><i class="fa-solid fa-microphone-slash"></i> Đã kết thúc nghe. Nếu chưa hiện điểm, hãy bấm nút Micro và đọc to, rõ lại nhé!</span>`;
+                if (isListeningSpeech) {
+                    finishAndScore();
                 }
             };
 
             speechRecognitionInstance.start();
         } catch (err) {
             console.error("[Speech] Start error:", err);
-            isListeningSpeech = false;
-            if (DOM.cardMicBtn) DOM.cardMicBtn.classList.remove('listening');
-            if (DOM.studyMicBtn) DOM.studyMicBtn.classList.remove('listening');
+            clearTimers();
+            stopMicUI();
             showMicNotice("Lỗi khởi động Microphone: " + (err.message || "Vui lòng thử lại."), true);
         }
     };
