@@ -1873,11 +1873,68 @@ function performSearch() {
 function setupEventListeners() {
     if (DOM.flashcard) {
         DOM.flashcard.addEventListener('click', (e) => {
-            if (e.target.closest('.card-quick-speak') || e.target.closest('.card-star-btn') || e.target.closest('.control-btn') || window.getSelection().toString().length > 0) return;
+            // Không lật thẻ nếu người dùng bấm vào các nút điều khiển âm thanh, mic, sao yêu thích hoặc trong hộp đánh giá phát âm
+            if (e.target.closest('.card-quick-speak') || 
+                e.target.closest('.card-mic-btn') || 
+                e.target.closest('.speech-eval-box') || 
+                e.target.closest('.card-star-btn') || 
+                e.target.closest('.control-btn') || 
+                window.getSelection().toString().length > 0) return;
+
             DOM.flashcard.classList.toggle('is-flipped');
             isFlipped = !isFlipped;
             AudioFX.playFlip();
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(12);
+            }
         });
+    }
+
+    // HỖ TRỢ CỬ CHỈ VUỐT TRÊN MÀN HÌNH ĐIỆN THOẠI (MOBILE TOUCH SWIPE)
+    if (DOM.flashcardWrapper) {
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        let isTouching = false;
+
+        DOM.flashcardWrapper.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                touchEndX = touchStartX;
+                touchEndY = touchStartY;
+                isTouching = true;
+            }
+        }, { passive: true });
+
+        DOM.flashcardWrapper.addEventListener('touchmove', (e) => {
+            if (isTouching && e.touches.length === 1) {
+                touchEndX = e.touches[0].clientX;
+                touchEndY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+
+        DOM.flashcardWrapper.addEventListener('touchend', (e) => {
+            if (!isTouching) return;
+            isTouching = false;
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+
+            // Nhận diện cử chỉ vuốt ngang rõ rệt (> 45px và góc ngang lớn hơn góc dọc)
+            if (Math.abs(diffX) > 45 && Math.abs(diffX) > Math.abs(diffY) * 1.4) {
+                if (diffX < 0) {
+                    // Vuốt sang trái -> Chuyển từ tiếp theo (Next card)
+                    if (DOM.nextBtn) DOM.nextBtn.click();
+                } else {
+                    // Vuốt sang phải -> Chuyển từ trước đó (Prev card)
+                    if (DOM.prevBtn) DOM.prevBtn.click();
+                }
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    navigator.vibrate(20);
+                }
+            }
+        }, { passive: true });
     }
 
     if (DOM.frontSpeakBtn) {
