@@ -3045,100 +3045,114 @@ function analyzeWordStress(term, ipa) {
 
 // Chấm điểm ngặt nghèo đa tiêu chí: Ngữ âm + Âm cuối (Ending sound) + Accent UK/US + Nhấn nhá
 function evaluateSpeechPronunciation(spokenText, targetWord, targetIpa, accent = 'US') {
-    const spoken = (spokenText || '').toLowerCase().trim().replace(/[.,?!'"]/g, '');
-    const target = (targetWord || '').toLowerCase().trim().replace(/[.,?!'"]/g, '');
+    const cleanStr = (s) => (s || '')
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // bỏ dấu phụ
+        .replace(/[.,?!'’"–—\-_/\\()]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const spoken = cleanStr(spokenText);
+    const target = cleanStr(targetWord);
 
     if (!spoken || !target) {
         return { totalScore: 0, accuracyScore: 0, endingSoundScore: 0, accentScore: 0, stressScore: 0, feedback: [] };
     }
 
-    // 1. Tiêu chí 1: Độ chuẩn xác từ vựng (Word Accuracy - Levenshtein Text Similarity) - Trọng số 40%
-    const charSim = calculateLevenshteinSimilarity(spoken, target);
-    let accuracyScore = charSim;
+    const spokenTokens = spoken.split(' ').filter(Boolean);
+    const targetTokens = target.split(' ').filter(Boolean);
+
+    // 1. Tiêu chí 1: Độ chuẩn xác từ vựng (Word Accuracy)
+    let accuracyScore = calculateLevenshteinSimilarity(spoken, target);
+
+    // Nếu người dùng đọc khớp tuyệt đối
     if (spoken === target) {
         accuracyScore = 100;
     } else {
-        // Tách các từ đơn lẻ nếu đọc theo cụm hoặc câu
-        const spokenTokens = spoken.split(/\s+/);
-        const targetTokens = target.split(/\s+/);
-        if (targetTokens.every(tok => spoken.includes(tok)) || spokenTokens.every(tok => target.includes(tok))) {
-            accuracyScore = Math.max(accuracyScore, 95);
-        } else if (spoken.includes(target) || target.includes(spoken)) {
-            accuracyScore = Math.max(accuracyScore, 90);
+        // Kiểm tra xem tất cả các từ trong target có xuất hiện trong câu nói không
+        const allTargetWordsPresent = targetTokens.every(t => spokenTokens.includes(t) || spoken.includes(t));
+        if (allTargetWordsPresent) {
+            accuracyScore = 100;
+        } else {
+            // Tính tỷ lệ từ khớp theo từng token
+            let matchedTokenCount = 0;
+            targetTokens.forEach(t => {
+                const found = spokenTokens.some(s => s === t || calculateLevenshteinSimilarity(s, t) >= 80);
+                if (found) matchedTokenCount++;
+            });
+            const tokenRatio = Math.round((matchedTokenCount / targetTokens.length) * 100);
+            accuracyScore = Math.max(accuracyScore, tokenRatio);
         }
     }
 
-    // 2. Tiêu chí 2: Độ chính xác ngữ âm (Phonetic Sound Match) - Trọng số 25%
-    const spokenPhone = getPhoneticCode(spoken);
-    const targetPhone = getPhoneticCode(target);
-    const phoneticSim = calculateLevenshteinSimilarity(spokenPhone, targetPhone);
+    // 2. Tiêu chí 2: Độ chính xác ngữ âm (Phonetic Sound Match)
+    const spokenPhone = getPhoneticCode(spoken.replace(/\s+/g, ''));
+    const targetPhone = getPhoneticCode(target.replace(/\s+/g, ''));
+    let phoneticSim = calculateLevenshteinSimilarity(spokenPhone, targetPhone);
+    if (accuracyScore === 100) phoneticSim = Math.max(phoneticSim, 95);
 
-    // 3. Tiêu chí 3: Âm đuôi / Bật hơi âm cuối (Ending Sounds: s, z, t, d, k, p, θ, ed) - Trọng số 20%
+    // 3. Tiêu chí 3: Âm đuôi / Bật hơi âm cuối (Ending Sounds: s, z, t, d, k, p, θ, ed)
     let endingSoundScore = 100;
     const criticalEndings = ['s', 'z', 't', 'd', 'k', 'p', 'ed', 'ts', 'ks', 'ce', 'se'];
-    const hasEnding = criticalEndings.some(end => target.endsWith(end));
+    const lastWordTarget = targetTokens[targetTokens.length - 1] || target;
+    const lastWordSpoken = spokenTokens[spokenTokens.length - 1] || spoken;
+
+    const hasEnding = criticalEndings.some(end => lastWordTarget.endsWith(end));
 
     if (hasEnding) {
-        const lastSpoken = spoken.slice(-2);
-        const lastTarget = target.slice(-2);
-        const lastCharSpoken = spoken.slice(-1);
-        const lastCharTarget = target.slice(-1);
+        const lastSpokenChar = lastWordSpoken.slice(-1);
+        const lastTargetChar = lastWordTarget.slice(-1);
 
-        if (lastCharSpoken === lastCharTarget || lastSpoken === lastTarget) {
+        if (lastSpokenChar === lastTargetChar || lastWordSpoken.endsWith(lastWordTarget.slice(-2))) {
             endingSoundScore = 100;
-        } else if (lastCharTarget === 's' && !spoken.endsWith('s') && !spoken.endsWith('z')) {
-            endingSoundScore = 60; // Tránh trừ quá gắt gây nản lòng
-        } else if ((lastCharTarget === 't' || lastCharTarget === 'd') && !spoken.endsWith('t') && !spoken.endsWith('d')) {
-            endingSoundScore = 65;
+        } else if (lastTargetChar === 's' && (lastWordSpoken.endsWith('s') || lastWordSpoken.endsWith('z'))) {
+            endingSoundScore = 100;
+        } else if ((lastTargetChar === 't' || lastTargetChar === 'd') && (lastWordSpoken.endsWith('t') || lastWordSpoken.endsWith('d'))) {
+            endingSoundScore = 95;
         } else {
-            endingSoundScore = 75;
+            endingSoundScore = 70; // Giảm nhẹ thay vì phạt nặng
         }
     }
 
-    // 4. Tiêu chí 4: Accent & Nhấn nhá trọng âm (Accent / Stress Intonation) - Trọng số 15%
-    let accentScore = 88;
-    let stressScore = 85;
+    // 4. Tiêu chí 4: Accent & Nhấn nhá trọng âm (Accent / Stress Intonation)
+    let accentScore = 90;
+    let stressScore = 90;
     const stressInfo = analyzeWordStress(target, targetIpa);
 
-    // Kiểm tra độ dài từ phát âm so với từ gốc
-    const lenRatio = spoken.length / Math.max(1, target.length);
-    if (lenRatio < 0.6) {
-        stressScore -= 15;
-    } else if (lenRatio > 1.5) {
-        stressScore -= 10;
-    }
-
-    // Phân biệt Accent UK vs US
     if (accent === 'UK') {
-        if (target.endsWith('r') && !spoken.endsWith('r')) accentScore = 95;
-        else accentScore = 90;
+        if (target.endsWith('r') && !spoken.endsWith('r')) accentScore = 98;
+        else accentScore = 92;
     } else {
-        if (target.includes('r') && spoken.includes('r')) accentScore = 95;
-        else accentScore = 88;
+        if (target.includes('r') && spoken.includes('r')) accentScore = 98;
+        else accentScore = 92;
     }
 
     // TỔNG HỢP ĐIỂM
     let totalScore = Math.round(
-        (accuracyScore * 0.40) +
+        (accuracyScore * 0.45) +
         (phoneticSim * 0.25) +
-        (endingSoundScore * 0.20) +
+        (endingSoundScore * 0.15) +
         (((stressScore + accentScore) / 2) * 0.15)
     );
 
-    // Nếu các từ trùng khớp hoàn toàn, bảo đảm ít nhất 90-100 điểm
-    if (spoken === target) {
+    // Nếu đọc đúng từ mục tiêu -> bảo đảm điểm xuất sắc (>= 90 điểm)
+    if (accuracyScore === 100) {
         totalScore = Math.max(totalScore, 92);
-    } else if (accuracyScore >= 85) {
-        totalScore = Math.max(totalScore, 80);
+    } else if (accuracyScore >= 80) {
+        totalScore = Math.max(totalScore, 82);
     }
 
-    // Tạo các nhận xét chi tiết
+    // Tạo các nhận xét chi tiết, thân thiện và hữu ích
     const feedback = [];
-    if (hasEnding && endingSoundScore < 70) {
-        feedback.push(`⚠️ <strong>Gợi ý âm đuôi:</strong> Chú ý bật nhẹ âm kết thúc "<em>-${target.slice(-2)}</em>".`);
-    }
-    if (stressInfo.totalSyllables > 1) {
-        feedback.push(`🎯 <strong>Trọng âm:</strong> Nhấn vào <strong>âm tiết ${stressInfo.stressIndex}</strong> ${targetIpa ? `[<code>${targetIpa}</code>]` : ''}.`);
+    if (totalScore >= 90) {
+        feedback.push(`🎉 <strong>Tuyệt vời!</strong> Bạn phát âm rất rõ ràng, tự tin và chuẩn bản xứ.`);
+    } else {
+        if (hasEnding && endingSoundScore < 85) {
+            feedback.push(`💡 <strong>Gợi ý âm đuôi:</strong> Hãy chú ý bật nhẹ âm cuối "<em>-${lastWordTarget.slice(-2)}</em>" để từ tròn vành hơn.`);
+        }
+        if (stressInfo.totalSyllables > 1) {
+            feedback.push(`🎯 <strong>Trọng âm:</strong> Hãy nhấn hơi mạnh và cao giọng hơn ở <strong>âm tiết ${stressInfo.stressIndex}</strong> ${targetIpa ? `(<code>${targetIpa}</code>)` : ''}.`);
+        }
     }
     if (accent === 'UK') {
         feedback.push(`🇬🇧 <strong>Giọng Anh - Anh (UK):</strong> Phát âm tròn vành rõ chữ, không uốn cong lưỡi ở âm /r/ cuối.`);
@@ -3270,36 +3284,51 @@ function setupSpeechRecognition() {
                 if (DOM.cardMicBtn) DOM.cardMicBtn.classList.remove('listening');
                 if (DOM.studyMicBtn) DOM.studyMicBtn.classList.remove('listening');
 
-                let spoken = '';
-                if (event.results && event.results[0] && event.results[0][0]) {
-                    spoken = event.results[0][0].transcript || '';
+                // Lấy tất cả các kết quả nhận diện tiềm năng từ microphone
+                let candidates = [];
+                if (event.results && event.results[0]) {
+                    for (let i = 0; i < event.results[0].length; i++) {
+                        if (event.results[0][i] && event.results[0][i].transcript) {
+                            candidates.push(event.results[0][i].transcript);
+                        }
+                    }
                 }
+                let spoken = candidates[0] || '';
 
                 const currentItem = (currentDeckItems && currentDeckItems[currentCardIndex]) ? currentDeckItems[currentCardIndex] : null;
                 const target = currentItem ? currentItem.term : '';
                 const ipa = currentItem ? (currentItem.ipa || '') : '';
 
-                // Đánh giá ngữ âm đa chiều nâng cao
-                const result = evaluateSpeechPronunciation(spoken, target, ipa, voiceAccent);
+                // So sánh với tất cả các ứng viên nhận diện để chọn kết quả chấm công bằng nhất
+                let bestResult = evaluateSpeechPronunciation(spoken, target, ipa, voiceAccent);
+                for (let k = 1; k < candidates.length; k++) {
+                    const res = evaluateSpeechPronunciation(candidates[k], target, ipa, voiceAccent);
+                    if (res.totalScore > bestResult.totalScore) {
+                        bestResult = res;
+                        spoken = candidates[k];
+                    }
+                }
+
+                const result = bestResult;
                 const score = result.totalScore;
 
                 let scoreBadge = '';
                 let feedbackTitle = '';
 
-                if (score >= 88) {
-                    // Chuẩn bản xứ xuất sắc (88 - 100 điểm)
+                if (score >= 85) {
+                    // Chuẩn bản xứ xuất sắc (85 - 100 điểm)
                     AudioFX.playCorrect();
                     noiLua();
                     scoreBadge = `<span style="background:var(--success); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem; box-shadow:0 2px 8px rgba(16,185,129,0.3);"><i class="fa-solid fa-crown"></i> ${score}/100 ĐIỂM</span>`;
                     feedbackTitle = `<span class="speech-match-good"><i class="fa-solid fa-circle-check"></i> Phát âm chuẩn xác đỉnh cao (Native Level)!</span>`;
                     if (typeof confetti !== 'undefined') confetti({ particleCount: 90, spread: 70 });
-                } else if (score >= 68) {
-                    // Khá tốt (68 - 87 điểm)
+                } else if (score >= 65) {
+                    // Khá tốt (65 - 84 điểm)
                     AudioFX.playPop();
                     scoreBadge = `<span style="background:var(--warning); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem;"><i class="fa-solid fa-thumbs-up"></i> ${score}/100 ĐIỂM</span>`;
                     feedbackTitle = `<span style="color:var(--warning); font-weight:700;"><i class="fa-solid fa-circle-exclamation"></i> Khá tốt, còn lỗi nhẹ âm đuôi hoặc nhấn trọng âm!</span>`;
                 } else {
-                    // Cần luyện tập thêm (< 68 điểm)
+                    // Cần luyện tập thêm (< 65 điểm)
                     AudioFX.playWrong();
                     scoreBadge = `<span style="background:var(--danger); color:white; padding:4px 12px; border-radius:14px; font-weight:800; font-size:0.95rem;"><i class="fa-solid fa-circle-xmark"></i> ${score}/100 ĐIỂM</span>`;
                     feedbackTitle = `<span class="speech-match-bad"><i class="fa-solid fa-triangle-exclamation"></i> Chưa đạt chuẩn! Hãy nghe mẫu và đọc lại nhé!</span>`;
